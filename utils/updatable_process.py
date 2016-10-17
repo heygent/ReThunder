@@ -55,6 +55,9 @@ class UpdatableProcess(metaclass=abc.ABCMeta):
                 self.__running_process = None
                 return self._on_stop(self._stop_ev.value)
 
+            else:
+                assert False, "Spurious wake"
+
     @abc.abstractmethod
     def _on_start(self, init_value):
         raise NotImplemented
