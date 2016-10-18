@@ -82,10 +82,7 @@ class NetworkInterface:
         self.collision_callback = collision_callback
 
         self.__bus_list = []
-        self.__message_received_cond = ConditionVar(self.env)
-
         self.__network_state = NetworkState(self.env)
-
         self.__transmission_speed = transmission_speed
 
     def send_to_network_proc(self, message_val: Any, message_len: int) \
@@ -114,6 +111,6 @@ class NetworkInterface:
 
         env = self.env
 
-        return (yield (env.timeout(timeout, value=self.timeout_sentinel) or
-                       self.__message_received_cond.wait()))
+        return (yield self.__network_state.receive_current_transmission_ev() or
+                env.timeout(timeout, value=self.timeout_sentinel))
 
