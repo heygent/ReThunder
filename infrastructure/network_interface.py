@@ -107,10 +107,15 @@ class NetworkInterface:
     def send_to_node_proc(self, message: TransmittedMessage):
         self.__network_state.occupy(message)
 
-    def receive_proc(self, timeout=0):
+    def receive_proc(self, timeout=None):
 
         env = self.env
 
-        return (yield self.__network_state.receive_current_transmission_ev() or
-                env.timeout(timeout, value=self.timeout_sentinel))
+        if timeout is None:
+            to = env.event()
+        else:
+            to = env.timeout(timeout, value=self.timeout_sentinel)
+
+        return (yield self.__network_state.receive_current_transmission_ev()
+                or to)
 
