@@ -1,19 +1,19 @@
-import itertools
 import collections
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Optional, Iterable
 
 import simpy
 
-from infrastructure.network_interface import NetworkInterface
+from infrastructure.message import CollisionSentinel
+from infrastructure.network_interface import NetworkNode
 from utils.process_decorator import run_process
 
 
-class ReceiverNode:
+class ReceiverNode(NetworkNode):
 
-    def __init__(self, network_interface: NetworkInterface):
+    def __init__(self, env: simpy.Environment, transmission_speed,
+                 collision_callback=lambda x, y: CollisionSentinel):
 
-        self.env = network_interface.env            # type: simpy.Environment
-        self.network_interface = network_interface  # type: NetworkInterface
+        super().__init__(env, transmission_speed, collision_callback)
 
         self.received = []  # type: List[Tuple[int, Any]]
         self.run_until = lambda: False
@@ -23,19 +23,17 @@ class ReceiverNode:
 
         while not self.run_until():
 
-            message = yield self.network_interface.receive_proc()
+            message = yield self._receive_proc()
             self.received.append((self.env.now, message))
 
 
-class SenderNode:
+class SenderNode(NetworkNode):
 
-    def __init__(self, network_interface):
+    def __init__(self, env, transmission_speed,
+                 send_queue: Iterable[Any]=()):
 
-        self.env = self.network_interface.env       # type: simpy.Environment
-        self.network_interface = network_interface  # type: NetworkInterface
-
-        self.__send_queue = collections.deque()
-        self.__insertion_index = itertools.count()
+        super().__init__(env, transmission_speed)
+        self.__send_queue = collections.deque(iterable=send_queue)
 
     def send_next(self, message, message_len):
         self.__send_queue.append((message, message_len))
@@ -47,4 +45,4 @@ class SenderNode:
 
         while len(send_queue) > 0:
             msg_to_send = send_queue.pop()
-            yield self.network_interface.send_to_network_proc(*msg_to_send)
+            yield self._send_to_network_proc(*msg_to_send)

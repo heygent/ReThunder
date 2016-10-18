@@ -4,7 +4,7 @@ import simpy
 from typing import List
 
 from infrastructure.message import TransmittedMessage, CollisionSentinel
-from infrastructure.network_interface import NetworkInterface
+from infrastructure.network_interface import NetworkNode
 from utils.condition_var import BroadcastConditionVar
 from utils.updatable_process import UpdatableProcess
 
@@ -68,7 +68,7 @@ class Bus:
 
         self.env = env
         self.__bus_state = BusState(env, propagation_delay)
-        self.__node_interface_list = []  # type: List[NetworkInterface]
+        self.__node_interface_list = []  # type: List[NetworkNode]
 
     def register_node(self, node):
         self.__node_interface_list.append(node)

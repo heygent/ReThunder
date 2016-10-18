@@ -71,7 +71,7 @@ class NetworkState(UpdatableProcess):
         self.__current_transmission_ended.broadcast(message)
 
 
-class NetworkInterface:
+class NetworkNode:
 
     timeout_sentinel = object()
 
@@ -87,7 +87,7 @@ class NetworkInterface:
         self.__transmission_speed = transmission_speed
 
     @run_process
-    def send_to_network_proc(self, message_val: Any, message_len: int):
+    def _send_to_network_proc(self, message_val: Any, message_len: int):
 
         yield self.__network_state.wait_free_network_ev()
 
@@ -110,7 +110,7 @@ class NetworkInterface:
         self.__network_state.occupy(message)
 
     @run_process
-    def receive_proc(self, timeout=None):
+    def _receive_proc(self, timeout=None):
 
         env = self.env
 

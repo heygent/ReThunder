@@ -3,7 +3,7 @@ import unittest
 import simpy
 
 from infrastructure.bus import Bus
-from infrastructure.network_interface import NetworkInterface
+from infrastructure.network_interface import NetworkNode
 from utils.iterblocks import iterblocks
 
 
@@ -15,7 +15,7 @@ class TestNetwork(unittest.TestCase):
         prop_delay = 1
         trans_speed = 1
 
-        node_interfaces = [NetworkInterface(env, trans_speed) for _ in range(4)]
+        node_interfaces = [NetworkNode(env, trans_speed) for _ in range(4)]
         buses = []
 
         msg = "I'm Hannibal"
@@ -31,9 +31,9 @@ class TestNetwork(unittest.TestCase):
             buses.append(bus)
 
         # noinspection PyShadowingNames
-        def send_to_network(env, node: NetworkInterface, delay, msg, msg_len):
+        def send_to_network(env, node: NetworkNode, delay, msg, msg_len):
             yield env.timeout(delay)
-            env.process(node.send_to_network_proc(msg, msg_len))
+            env.process(node._send_to_network_proc(msg, msg_len))
 
         for i, node in enumerate(node_interfaces):
             env.process(send_to_network(env, node, 10 * i, msg, msg_len))
