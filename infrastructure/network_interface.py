@@ -1,4 +1,3 @@
-import collections
 from typing import Generator, Any
 
 import simpy
@@ -73,7 +72,9 @@ class NetworkState(UpdatableProcess):
 
 class NetworkInterface:
 
-    def __init__(self, env, transmission_speed, max_cached_messages=1,
+    timeout_sentinel = object()
+
+    def __init__(self, env, transmission_speed,
                  collision_callback=lambda x, y: CollisionSentinel):
 
         self.env = env  # type: simpy.Environment
@@ -81,7 +82,6 @@ class NetworkInterface:
         self.collision_callback = collision_callback
 
         self.__bus_list = []
-        self.__cached_messages = collections.deque(maxlen=max_cached_messages)
         self.__message_received_cond = ConditionVar(self.env)
 
         self.__network_state = NetworkState(self.env)
@@ -105,28 +105,15 @@ class NetworkInterface:
         self.__network_state.occupy(message)
 
     def register_bus(self, bus):
-
         self.__bus_list.append(bus)
 
     def send_to_node_proc(self, message: TransmittedMessage):
-
         self.__network_state.occupy(message)
-        
-        # Cache message
-        
-        message = yield self.__network_state.receive_current_transmission_ev()
-        self.__cached_messages.appendleft(message.value)
-        self.__message_received_cond.signal()
 
-    def receive_proc(self, blocking=True):
+    def receive_proc(self, timeout=0):
 
-        cached_messages = self.__cached_messages
+        env = self.env
 
-        if blocking and len(cached_messages) == 0:
-            yield self.__message_received_cond.wait()
+        return (yield (env.timeout(timeout, value=self.timeout_sentinel) or
+                       self.__message_received_cond.wait()))
 
-        try:
-            return self.__cached_messages.popleft().value
-        except IndexError:
-            assert not blocking, "Spurious wake"
-            return None
