@@ -3,6 +3,8 @@ from typing import Any, List, Optional
 import simpy
 import abc
 
+from utils.process_decorator import run_process
+
 
 class UpdatableProcess(metaclass=abc.ABCMeta):
 
@@ -15,6 +17,7 @@ class UpdatableProcess(metaclass=abc.ABCMeta):
 
         self.__running_process = None                 # type: simpy.Process
 
+    @run_process
     def __run_proc(self, init_value: List[Any]):
 
         if len(init_value) > 1:
@@ -37,9 +40,8 @@ class UpdatableProcess(metaclass=abc.ABCMeta):
 
             if self._stop_ev.processed and self._update_ev.processed:
 
-                self.__running_process = self.env.process(
-                    self.__run_proc(self._update_ev.value)
-                )
+                self.__running_process = self.__run_proc(self._update_ev.value)
+
                 self._update_ev = self.env.event()
                 return self._on_stop(self._stop_ev.value)
 
@@ -77,7 +79,7 @@ class UpdatableProcess(metaclass=abc.ABCMeta):
     def update(self, value):
 
         if self.__running_process is None:
-            self.__running_process = self.env.process(self.__run_proc([value]))
+            self.__running_process = self.__run_proc([value])
 
         elif self._update_ev.triggered:
             self._update_ev.value.append(value)

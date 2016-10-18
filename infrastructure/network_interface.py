@@ -3,6 +3,7 @@ from typing import Generator, Any
 import simpy
 
 from utils.condition_var import ConditionVar, BroadcastConditionVar
+from utils.process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
 
 from .message import TransmittedMessage, CollisionSentinel, \
@@ -85,8 +86,8 @@ class NetworkInterface:
         self.__network_state = NetworkState(self.env)
         self.__transmission_speed = transmission_speed
 
-    def send_to_network_proc(self, message_val: Any, message_len: int) \
-            -> Generator[simpy.Event, simpy.Event, None]:
+    @run_process
+    def send_to_network_proc(self, message_val: Any, message_len: int):
 
         yield self.__network_state.wait_free_network_ev()
 
@@ -104,9 +105,11 @@ class NetworkInterface:
     def register_bus(self, bus):
         self.__bus_list.append(bus)
 
+    @run_process
     def send_to_node_proc(self, message: TransmittedMessage):
         self.__network_state.occupy(message)
 
+    @run_process
     def receive_proc(self, timeout=None):
 
         env = self.env
