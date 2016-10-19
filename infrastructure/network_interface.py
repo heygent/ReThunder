@@ -1,4 +1,5 @@
 from typing import Generator, Any
+from typing import List
 
 import simpy
 
@@ -6,6 +7,7 @@ from utils.condition_var import ConditionVar, BroadcastConditionVar
 from utils.process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
 
+import infrastructure.bus
 from .message import TransmittedMessage, CollisionSentinel, \
     make_transmission_delay
 
@@ -102,8 +104,10 @@ class NetworkNode:
 
         self.__network_state.occupy(message)
 
-    def register_bus(self, bus):
+    def register_bus(self, bus, mutual=False):
         self.__bus_list.append(bus)
+        if mutual:
+            bus.register_node(self, False)
 
     @run_process
     def send_to_node_proc(self, message: TransmittedMessage):
