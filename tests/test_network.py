@@ -1,50 +1,63 @@
+
 import unittest
 
 import simpy
 
 from infrastructure.bus import Bus
-from infrastructure.network_interface import NetworkNode
-from utils.iterblocks import iterblocks
+from nodes.nodes import SenderNode, ReceiverNode
 
 
 class TestNetwork(unittest.TestCase):
 
-    def test1(self):
+    def setUp(self):
+        self.maxDiff = None
+
+    def test_reception(self):
 
         env = simpy.Environment()
+        messages = [('Message{}'.format(i), 8) for i in range(10)]
+        trans_speed = 2
         prop_delay = 1
-        trans_speed = 1
 
-        node_interfaces = [NetworkNode(env, trans_speed) for _ in range(4)]
-        buses = []
+        sender = SenderNode(env, trans_speed, messages)
+        receiver = ReceiverNode(env, trans_speed)
 
-        msg = "I'm Hannibal"
-        msg_len = 4
+        bus = Bus(env, prop_delay)
 
-        for node_group in iterblocks(node_interfaces, 2, 1):
+        for node in (sender, receiver):
+            bus.register_node(node)
 
-            bus = Bus(env, prop_delay)
-
-            for node in node_group:
-                bus.register_node(node)
-
-            buses.append(bus)
-
-        # noinspection PyShadowingNames
-        def send_to_network(env, node: NetworkNode, delay, msg, msg_len):
-            yield env.timeout(delay)
-            env.process(node._send_to_network_proc(msg, msg_len))
-
-        for i, node in enumerate(node_interfaces):
-            env.process(send_to_network(env, node, 10 * i, msg, msg_len))
+        processes = [node.run_proc() for node in (sender, receiver)]
 
         env.run()
 
-        pass
+        self.assertEqual(receiver.received,
+                         [(6 * i, msg) for i, (msg, _) in enumerate(messages,
+                                                                    start=1)])
 
+    def test_collisions(self):
 
+        env = simpy.Environment()
+        messages = [('Message{}'.format(i), 8) for i in range(10)]
+        trans_speed = 2
+        prop_delay = 1
 
+        senders = [SenderNode(env, trans_speed, messages) for _ in range(2)]
+        receiver = ReceiverNode(env, trans_speed)
+        nodes = [*senders, receiver]
 
+        bus = Bus(env, prop_delay)
+
+        for node in nodes:
+            bus.register_node(node)
+
+        processes = [node.run_proc() for node in nodes]
+
+        env.run()
+
+        self.assertEqual(receiver.received,
+                         [(6 * i, msg) for i, (msg, _) in enumerate(messages,
+                                                                    start=1)])
 
 
 
