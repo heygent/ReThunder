@@ -100,7 +100,7 @@ class NetworkNode:
         message = TransmittedMessage(message_val, transmission_delay)
 
         for bus in self.__bus_list:
-            bus.send(message)
+            bus.send_to_bus_proc(message)
 
         self.__network_state.occupy(message)
 
