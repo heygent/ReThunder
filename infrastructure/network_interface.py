@@ -123,11 +123,22 @@ class NetworkNode:
 
         env = self.env
 
+        received = self.__network_state.receive_current_transmission_ev()
+
         if timeout is None:
             to = env.event()
         else:
-            to = env.timeout(timeout, value=self.timeout_sentinel)
+            to = env.timeout(timeout)
 
-        return (yield self.__network_state.receive_current_transmission_ev()
-                or to)
+        yield received or to
+        yield env.timeout(0)
+
+        if received.processed:
+            # Both events and TransmittedMessages have the value attribute,
+            # resulting in this ugliness
+            return received.value.value
+        if to.processed:
+            return self.timeout_sentinel
+
+        assert False, "Spurious wake"
 
