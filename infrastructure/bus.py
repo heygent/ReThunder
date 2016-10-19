@@ -1,7 +1,6 @@
-from typing import NamedTuple
+from typing import List
 
 import simpy
-from typing import List
 
 from infrastructure.message import TransmittedMessage, CollisionSentinel
 from infrastructure.network_interface import NetworkNode
