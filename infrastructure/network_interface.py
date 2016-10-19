@@ -1,5 +1,4 @@
-from typing import Generator, Any
-from typing import List
+from typing import Any, List
 
 import simpy
 
@@ -84,14 +83,15 @@ class NetworkNode:
 
         self.collision_callback = collision_callback
 
-        self.__bus_list = []
+        self.__bus_list = []  # type: List[infrastructure.bus.Bus]
         self.__network_state = NetworkState(self.env)
         self.__transmission_speed = transmission_speed
 
     @run_process
     def _send_to_network_proc(self, message_val: Any, message_len: int):
 
-        yield self.__network_state.wait_free_network_ev()
+        if self.__network_state.network_is_busy:
+            yield self.__network_state.wait_free_network_ev()
 
         transmission_delay = make_transmission_delay(
             self.__transmission_speed, message_len
@@ -111,6 +111,11 @@ class NetworkNode:
 
     @run_process
     def send_to_node_proc(self, message: TransmittedMessage):
+        # Make it a generator for eventual future changes that may require
+        # yielding events
+        if False:
+            yield
+
         self.__network_state.occupy(message)
 
     @run_process
