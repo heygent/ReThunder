@@ -3,7 +3,7 @@ from typing import Any, List
 import simpy
 
 from utils.condition_var import ConditionVar, BroadcastConditionVar
-from utils.process_decorator import run_process
+from utils.run_process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
 
 import infrastructure.bus

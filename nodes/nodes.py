@@ -5,7 +5,7 @@ import simpy
 
 from infrastructure.message import CollisionSentinel
 from infrastructure.network_interface import NetworkNode
-from utils.process_decorator import run_process
+from utils.run_process_decorator import run_process
 
 
 class ReceiverNode(NetworkNode):

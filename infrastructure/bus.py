@@ -6,7 +6,7 @@ from typing import List
 from infrastructure.message import TransmittedMessage, CollisionSentinel
 from infrastructure.network_interface import NetworkNode
 from utils.condition_var import BroadcastConditionVar
-from utils.process_decorator import run_process
+from utils.run_process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
 
 

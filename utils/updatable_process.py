@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 import simpy
 import abc
 
-from utils.process_decorator import run_process
+from utils.run_process_decorator import run_process
 
 
 class UpdatableProcess(metaclass=abc.ABCMeta):
