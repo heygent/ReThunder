@@ -69,10 +69,12 @@ class Bus:
 
         self.env = env
         self.__bus_state = BusState(env, propagation_delay)
-        self.__node_interface_list = []  # type: List[NetworkNode]
+        self.__node_list = []  # type: List[NetworkNode]
 
-    def register_node(self, node):
-        self.__node_interface_list.append(node)
+    def register_node(self, node: NetworkNode, mutual=True):
+        self.__node_list.append(node)
+        if mutual:
+            node.register_bus(self, False)
 
     @run_process
     def send_to_bus_proc(self, message):
@@ -80,6 +82,6 @@ class Bus:
         self.__bus_state.occupy(message)
         message = yield self.__bus_state.receive_current_transmission_ev()
 
-        for node_interface in self.__node_interface_list:
+        for node in self.__node_list:
 
-            node_interface.send_to_node_proc(message)
+            node.send_to_node_proc(message)
