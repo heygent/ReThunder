@@ -6,6 +6,7 @@ from typing import List
 from infrastructure.message import TransmittedMessage, CollisionSentinel
 from infrastructure.network_interface import NetworkNode
 from utils.condition_var import BroadcastConditionVar
+from utils.process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
 
 
@@ -73,6 +74,7 @@ class Bus:
     def register_node(self, node):
         self.__node_interface_list.append(node)
 
+    @run_process
     def send_to_bus_proc(self, message):
 
         self.__bus_state.occupy(message)
@@ -80,4 +82,4 @@ class Bus:
 
         for node_interface in self.__node_interface_list:
 
-            self.env.process(node_interface.send_to_node_proc(message))
+            node_interface.send_to_node_proc(message)
