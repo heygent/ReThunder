@@ -44,5 +44,5 @@ class SenderNode(NetworkNode):
         send_queue = self.__send_queue
 
         while len(send_queue) > 0:
-            msg_to_send = send_queue.pop()
+            msg_to_send = send_queue.popleft()
             yield self._send_to_network_proc(*msg_to_send)
