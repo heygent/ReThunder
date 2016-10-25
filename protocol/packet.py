@@ -1,41 +1,27 @@
+import enum
 from collections import defaultdict
-from typing import Dict
-from typing import List
-from typing import Optional, Tuple
+from typing import Dict, List, Optional
+
+from protocol.packet_fields import FlagField, DataField, FixedSizeInt
 
 
-class FixedSizeInt:
-
-    def __init__(self, max_size, init_value: Optional[int]=0, optional=False):
-
-        self.__max_size = max_size  # type: int
-        self.__optional = optional  # type: bool
-        self.__validate(init_value)
-        self.__value = init_value   # type: Optional[int]
-
-    def __get__(self, instance, owner):
-        return self.__value
-
-    def __set__(self, instance, value):
-        self.__validate(value)
-        self.__value = value
-
-    def __validate(self, value):
-
-        if value is None:
-            if not self.__optional:
-                raise ValueError("Value can't be None")
-        elif value.bit_length() > self.__max_size:
-            raise ValueError("Integer too big for this field")
+class PacketCodes(enum.Enum):
+    hello = 0b1111
+    discovery = 0b0000
 
 
 class Packet:
 
-    version     = FixedSizeInt(2)
-    code        = FixedSizeInt(4)
-    token       = FixedSizeInt(3)
+    heading     = FixedSizeInt(11)
+    version     = DataField('heading', 9, 2)
+    ack         = FlagField('heading', 8)
+    response    = FlagField('heading', 7)
+    code        = DataField('heading', 3, 4)
+    token       = DataField('heading', 0, 3)
 
-    source_static   = FixedSizeInt(11)
+    source_static     = FixedSizeInt(11)
+    hello_mac_address = source_static
+
     source_dynamic  = FixedSizeInt(11)
     destination     = FixedSizeInt(11)
 
@@ -45,10 +31,13 @@ class Packet:
     next_hop        = FixedSizeInt(11, None, True)
     new_logic_addr  = FixedSizeInt(11, None, True)
 
+    code_is_node_init       = FlagField('code', 3)
+    code_has_path           = FlagField('code', 2)
+    code_is_dest_static     = FlagField('code', 1)
+    code_has_new_logic_addr = FlagField('code', 0)
+
     def __init__(self):
 
-        self.response = False      # type: bool
-        self.ack = False           # type: bool
         self.tracers_list = None   # type: Optional[List[int]]
         self.path = None           # type: Optional[List[int]]
         self.payload = None
@@ -60,7 +49,10 @@ class Packet:
     @property
     def number_of_frames(self):
 
-        frames = 6
+        if self.code == PacketCodes.hello:
+            return 2
+
+        frames = 5
 
         for frame in (self.next_hop, self.new_logic_addr):
             if frame is not None:
@@ -87,4 +79,3 @@ class Packet:
             raise IndexError('Frame index out of range')
 
         self.frame_errors[frame_index] += 1
-
