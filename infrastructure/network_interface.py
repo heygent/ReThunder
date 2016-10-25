@@ -124,8 +124,14 @@ class NetworkNode:
 
         if timeout is None:
             to = env.event()
-        else:
+        elif isinstance(timeout, simpy.Event):
+            to = timeout
+        elif isinstance(timeout, int):
             to = env.timeout(timeout)
+        else:
+            raise TypeError(
+                'timeout can be None, an integer or an event.'
+            )
 
         yield received or to
         yield env.timeout(0)
