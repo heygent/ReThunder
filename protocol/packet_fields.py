@@ -1,3 +1,31 @@
+from typing import Optional
+
+
+class FixedSizeInt:
+
+    def __init__(self, max_size, init_value: Optional[int]=0, optional=False):
+
+        self.__max_size = max_size  # type: int
+        self.__optional = optional  # type: bool
+        self.__validate(init_value)
+        self.__value = init_value   # type: Optional[int]
+
+    def __get__(self, instance, owner):
+        return self.__value
+
+    def __set__(self, instance, value):
+        self.__validate(value)
+        self.__value = value
+
+    def __validate(self, value):
+
+        if value is None:
+            if not self.__optional:
+                raise ValueError("Value can't be None")
+        elif value.bit_length() > self.__max_size:
+            raise ValueError("Integer too big for this field")
+
+
 class FlagField:
 
     def __init__(self, container_name, roffset):
@@ -40,4 +68,3 @@ class DataField:
         old_container = (getattr(instance, container_name)
                          & ~(self.mask << roffset))
         setattr(instance, container_name, (value << roffset) | old_container)
-
