@@ -4,6 +4,7 @@ import unittest
 import simpy
 
 from infrastructure.bus import Bus
+from infrastructure.message import CollisionSentinel
 from nodes.nodes import SenderNode, ReceiverNode
 
 
@@ -56,8 +57,8 @@ class TestNetwork(unittest.TestCase):
         env.run()
 
         self.assertEqual(receiver.received,
-                         [(6 * i, msg) for i, (msg, _) in enumerate(messages,
-                                                                    start=1)])
+                         [(6 * i, CollisionSentinel)
+                          for i, (msg, _) in enumerate(messages, start=1)])
 
 
 
