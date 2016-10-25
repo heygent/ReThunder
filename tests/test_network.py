@@ -60,6 +60,3 @@ class TestNetwork(unittest.TestCase):
                          [(6 * i, CollisionSentinel)
                           for i, (msg, _) in enumerate(messages, start=1)])
 
-
-
-
