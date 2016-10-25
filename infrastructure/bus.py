@@ -16,12 +16,25 @@ class BusState(UpdatableProcess):
     def __init__(self, env: simpy.Environment, propagation_delay):
 
         super().__init__(env)
-        self.env = env
+
+        self.on_collision = None
 
         self.__propagation_delay = propagation_delay
         self.__current_message = None
         self.__current_transmission_ended = BroadcastConditionVar(env)
         self.__last_collision_time = None
+
+    @property
+    def current_message(self):
+        return self.__current_message
+
+    @property
+    def last_collision_time(self):
+        return self.__last_collision_time
+
+    @property
+    def propagation_delay(self):
+        return self.__propagation_delay
 
     def _on_start(self, init_value):
 
@@ -33,6 +46,11 @@ class BusState(UpdatableProcess):
 
         new_message = update_value  # type: TransmittedMessage
         self.__last_collision_time = self.env.now
+
+        try:
+            self.on_collision(self, new_message)
+        except TypeError:
+            pass
 
         collided_message = TransmittedMessage(
             CollisionSentinel,
@@ -74,6 +92,14 @@ class Bus:
         self.__node_list.append(node)
         if mutual:
             node.register_bus(self, False)
+
+    @property
+    def on_collision(self):
+        return self.__bus_state.on_collision
+
+    @on_collision.setter
+    def on_collision(self, other):
+        self.__bus_state.on_collision = other
 
     @run_process
     def send_to_bus_proc(self, message):
