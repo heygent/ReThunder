@@ -76,12 +76,9 @@ class NetworkNode:
 
     timeout_sentinel = object()
 
-    def __init__(self, env, transmission_speed,
-                 collision_callback=lambda x, y: CollisionSentinel):
+    def __init__(self, env, transmission_speed):
 
         self.env = env  # type: simpy.Environment
-
-        self.collision_callback = collision_callback
 
         self.__bus_list = []  # type: List[infrastructure.bus.Bus]
         self.__network_state = NetworkState(self.env)
