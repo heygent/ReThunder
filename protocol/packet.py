@@ -1,8 +1,13 @@
+import abc
 import enum
+import inspect
 from collections import defaultdict
-from typing import Dict, List, Optional
+from itertools import dropwhile
+from typing import List, Optional
 
 from protocol.packet_fields import FlagField, DataField, FixedSizeInt
+
+PHYSICAL_ADDRESS_FRAMES = 2
 
 
 class PacketCodes(enum.Enum):
@@ -10,7 +15,9 @@ class PacketCodes(enum.Enum):
     discovery = 0b0000
 
 
-class Packet:
+class Packet(metaclass=abc.ABCMeta):
+
+    __STATIC_FRAMES = 1
 
     heading     = FixedSizeInt(11)
     version     = DataField('heading', 9, 2)
@@ -19,53 +26,87 @@ class Packet:
     code        = DataField('heading', 3, 4)
     token       = DataField('heading', 0, 3)
 
-    source_static     = FixedSizeInt(11)
-    hello_mac_address = source_static
-
-    source_dynamic  = FixedSizeInt(11)
-    destination     = FixedSizeInt(11)
-
-    payload_length  = FixedSizeInt(11)
-    new_static_addr = payload_length
-
-    next_hop        = FixedSizeInt(11, None, True)
-    new_logic_addr  = FixedSizeInt(11, None, True)
-
     code_is_node_init       = FlagField('code', 3)
     code_has_path           = FlagField('code', 2)
     code_is_dest_static     = FlagField('code', 1)
     code_has_new_logic_addr = FlagField('code', 0)
 
     def __init__(self):
+        self.__frame_errors = defaultdict(int)
+        self.__frame_errors_view = self.__frame_errors.items()
 
-        self.tracers_list = None   # type: Optional[List[int]]
-        self.path = None           # type: Optional[List[int]]
-        self.payload = None
-        self.noise_table = {}      # type: Dict[int, int]
-        self.new_node_list = None  # type: Optional[List[int]]
-
-        self.frame_errors = defaultdict(lambda: 0)  # type: Dict[int, int]
-
-    @property
     def number_of_frames(self):
+        # noinspection PyProtectedMember
+        return sum(
+            cls._frame_increment(self)
+            for cls in dropwhile(lambda c: not issubclass(c, Packet),
+                                 reversed(inspect.getmro(type(self))))
+        )
 
-        if self.code == PacketCodes.hello:
-            return 2
+    @abc.abstractmethod
+    def _frame_increment(self):
+        return self.__STATIC_FRAMES
 
-        frames = 5
+    def damage_bit(self, frame_index):
 
-        for frame in (self.next_hop, self.new_logic_addr):
-            if frame is not None:
-                frames += 1
+        if not 0 <= frame_index < self.number_of_frames():
+            raise IndexError('Frame index out of range')
 
-        collections = ((self.tracers_list, 1), (self.new_node_list, 1),
-                       (self.path, 1), (self.noise_table, 2))
+        self.__frame_errors[frame_index] += 1
 
-        for collection, multiplier in collections:
-            try:
-                frames += len(collection) * multiplier
-            except TypeError:
-                pass
+    def damaged_frames(self):
+        return self.__frame_errors_view
+
+
+class PacketWithPhysicalAddress(Packet):
+
+    physical_address = FixedSizeInt(11 * PHYSICAL_ADDRESS_FRAMES)
+
+    @abc.abstractmethod
+    def _frame_increment(self):
+        return PHYSICAL_ADDRESS_FRAMES
+
+
+class PacketWithSource(Packet):
+
+    source_static    = FixedSizeInt(11)
+    source_logic     = FixedSizeInt(11)
+
+    @abc.abstractmethod
+    def _frame_increment(self):
+        return 2
+
+
+class HelloRequestPacket(PacketWithPhysicalAddress):
+    def _frame_increment(self):
+        return 0
+
+
+class HelloResponsePacket(PacketWithPhysicalAddress, PacketWithSource):
+
+    new_static_address = FixedSizeInt(11)
+    new_logic_address = FixedSizeInt(11)
+
+    def _frame_increment(self):
+        return 2
+
+
+class CommunicationPacket(PacketWithSource):
+
+    __STATIC_FRAMES = 2
+
+    next_hop        = FixedSizeInt(11)
+    payload_length  = FixedSizeInt(11)
+
+    def __init__(self):
+        super().__init__()
+        self.payload = None
+
+    @abc.abstractmethod
+    def _frame_increment(self):
+        # todo sistema numero frame rispetto campo lunghezza
+
+        frames = self.__STATIC_FRAMES
 
         # noinspection PyTypeChecker
         quot, remainder = divmod(self.payload_length, 4)
@@ -73,9 +114,62 @@ class Packet:
 
         return frames
 
-    def damage_bit(self, frame_index):
 
-        if not 0 <= frame_index < self.number_of_frames:
-            raise IndexError('Frame index out of range')
+class RequestPacket(CommunicationPacket):
 
-        self.frame_errors[frame_index] += 1
+    __STATIC_FRAMES = 3
+
+    new_static_addr = CommunicationPacket.payload_length
+    destination     = FixedSizeInt(11)
+    new_logic_addr  = FixedSizeInt(11, None, True)
+
+    def __init__(self):
+
+        super().__init__()
+
+        self.tracers_list = None   # type: Optional[List[int]]
+        self.path = None           # type: Optional[List[int]]
+
+    def __repr__(self):
+        return '<RequestPacket source={} dest={}>'.format(
+            self.source_static, self.destination
+        )
+
+    def _frame_increment(self):
+
+        frames = self.__STATIC_FRAMES
+        collections = (self.tracers_list, self.path)
+
+        frames += int(self.new_static_addr is not None)
+        frames += sum(len(collection or ()) for collection in collections)
+
+        return frames
+
+
+class ResponsePacket(CommunicationPacket):
+
+    __STATIC_FRAMES = 2
+
+    def __init__(self):
+        super().__init__()
+        self.noise_table = None    # type: Optional[List[int]]
+        self.new_node_list = None  # type: Optional[List[int]]
+
+    def __repr__(self):
+        # todo improve ResponsePacket __repr__
+        return '<ResponsePacket source={}>'.format(self.source_static)
+
+    def _frame_increment(self):
+
+        frames = self.__STATIC_FRAMES
+
+        # this time collections also contains, for every collection,
+        # the size in frames of each item inside of it
+
+        collections = ((self.noise_table, 2),
+                       (self.new_node_list, PHYSICAL_ADDRESS_FRAMES + 1))
+
+        frames += sum(len(collection or ()) * weight
+                      for collection, weight in collections)
+
+        return frames
