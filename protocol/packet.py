@@ -37,6 +37,13 @@ class Packet(metaclass=abc.ABCMeta):
         self.__frame_errors_view = self.__frame_errors.items()
 
     def number_of_frames(self):
+        """
+        Chiama _frame_increment per ogni classe nella gerarchia delle classi.
+        Somma i valori che restituiscono e restituisce il risultato.
+
+        :return: Il numero di frame di cui il pacchetto è composto.
+        """
+
         # noinspection PyProtectedMember
         return sum(
             cls._frame_increment(self)
