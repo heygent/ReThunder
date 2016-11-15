@@ -6,6 +6,9 @@ from utils.run_process_decorator import run_process
 
 class ReThunderNode(NetworkNode):
 
+    def _update_noise_table(self, packet):
+        raise NotImplemented
+
     @run_process
     def _receive_packet_proc(self, timeout=None):
 
@@ -26,19 +29,9 @@ class ReThunderNode(NetworkNode):
                 raise TypeError("A SlaveNode received something different "
                                 "from a packet.")
 
-            frame_errors = [max(error_count, 2) for _, error_count in
-                            received_packet.damaged_frames()]
+            self._update_noise_table(received_packet)
 
-            error_average = (
-                sum(frame_errors) / received_packet.number_of_frames
-            )
-
-            try:
-                self.noise_table[received_packet.source_static] = error_average
-            except AttributeError:
-                pass
-
-            if any(error_count >= 2 for error_count in frame_errors):
+            if not received_packet.is_readable():
                 continue
 
             return received_packet
