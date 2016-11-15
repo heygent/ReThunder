@@ -4,11 +4,23 @@ import typing
 import networkx as nx
 import simpy
 
-from protocol.packet import Packet, PacketCodes, HelloRequestPacket
+from protocol.packet import Packet, PacketCodes, HelloRequestPacket, \
+    ResponsePacket
+from protocol.packet import RequestPacket
 from protocol.rethunder_node import ReThunderNode
 from utils.condition_var import BroadcastConditionVar
 from utils.run_process_decorator import run_process
 from utils.shortest_paths_tree import shortest_paths_tree
+
+
+class BusyError(Exception):
+    def __init__(self, error_msg=None):
+
+        error_msg = error_msg or ('Master is currently waiting for another '
+                                  'answer.')
+
+        super().__init__(error_msg)
+
 
 SlaveNodeData = typing.NamedTuple(
     'SlaveNodeData', (
@@ -37,10 +49,14 @@ class MasterNode(ReThunderNode):
         self.__nodes_graph = nx.Graph()
         self.__shortest_paths_tree = nx.Graph()
         self.__send_cond = BroadcastConditionVar(self.env)
-        self.__waiting_for_response = set()
+        self.__current_message = None
 
     def send_message(self, dest_type: DestinationType, destination: int,
                      message, message_length):
+
+        if self.__current_message is not None:
+            raise BusyError
+
         self.__send_cond.broadcast((dest_type, destination, message,
                                     message_length))
 
