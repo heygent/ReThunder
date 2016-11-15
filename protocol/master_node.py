@@ -100,7 +100,7 @@ class MasterNode(ReThunderNode):
             yield self.__on_received_hello(packet)
 
         if packet.response:
-            pass
+            yield self.__on_received_response(packet)
 
         raise NotImplemented
 
@@ -111,3 +111,9 @@ class MasterNode(ReThunderNode):
     @run_process
     def __on_received_hello(self, packet: HelloRequestPacket):
         raise NotImplemented
+
+    @run_process
+    def __on_received_response(self, response_msg: ResponsePacket):
+
+        request_msg = self.__current_message  # type: RequestPacket
+        self.__current_message = None
