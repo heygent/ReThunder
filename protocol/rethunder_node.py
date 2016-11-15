@@ -26,7 +26,7 @@ class ReThunderNode(NetworkNode):
                 return self.timeout_sentinel
 
             if not isinstance(received_packet, Packet):
-                raise TypeError("A SlaveNode received something different "
+                raise TypeError("A ReThunderNode received something different "
                                 "from a packet.")
 
             self._update_noise_table(received_packet)
