@@ -12,6 +12,7 @@ PHYSICAL_ADDRESS_FRAMES = 2
 
 class PacketCodes(enum.Enum):
     hello = 0b1111
+    hello_response = 0b0011
     discovery = 0b0000
 
 
@@ -78,11 +79,20 @@ class PacketWithSource(Packet):
 
 
 class HelloRequestPacket(PacketWithPhysicalAddress):
+
+    def __init__(self):
+        super().__init__()
+        self.code = PacketCodes.hello
+
     def _frame_increment(self):
         return 0
 
 
 class HelloResponsePacket(PacketWithPhysicalAddress, PacketWithSource):
+
+    def __init__(self):
+        super().__init__()
+        self.code = PacketCodes.hello_response
 
     new_static_address = FixedSizeInt(11)
     new_logic_address = FixedSizeInt(11)
