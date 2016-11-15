@@ -65,6 +65,16 @@ class Packet(metaclass=abc.ABCMeta):
     def damaged_frames(self):
         return self.__frame_errors_view
 
+    def frame_error_average(self):
+
+        frame_errors = sum(max(error_count, 2)
+                           for error_count in self.__frame_errors.values())
+
+        return frame_errors / self.number_of_frames()
+
+    def is_readable(self):
+        return all(errors < 2 for errors in self.__frame_errors.values())
+
 
 class PacketWithPhysicalAddress(Packet):
 
