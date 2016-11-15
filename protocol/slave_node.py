@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import simpy
 
-from protocol.packet import Packet, PacketCodes, HelloRequestPacket
+from protocol.packet import PacketCodes, HelloRequestPacket, PacketWithSource
 from protocol.rethunder_node import ReThunderNode
 from utils.run_process_decorator import run_process
 
@@ -24,6 +24,15 @@ class SlaveNode(ReThunderNode):
 
         self.hello_timeout = HELLO_TIMEOUT
         self.run_until = lambda: False
+
+    def _update_noise_table(self, packet: PacketWithSource):
+
+        try:
+            self.noise_table[packet.source_static] = (
+                int(packet.frame_error_average() * 1000)
+            )
+        except AttributeError:
+            pass
 
     @run_process
     def hello_proc(self):
