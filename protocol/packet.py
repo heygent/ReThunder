@@ -3,7 +3,7 @@ import enum
 import inspect
 from collections import defaultdict
 from itertools import dropwhile
-from typing import List, Optional
+from typing import List, Dict, Optional
 
 from protocol.packet_fields import FlagField, DataField, FixedSizeInt
 
@@ -169,8 +169,8 @@ class ResponsePacket(CommunicationPacket):
 
     def __init__(self):
         super().__init__()
-        self.noise_table = None    # type: Optional[List[int]]
-        self.new_node_list = None  # type: Optional[List[int]]
+        self.noise_tables = []      # type: List[Dict[int, int]]
+        self.new_node_list = []     # type: List[int]
 
     def __repr__(self):
         # todo improve ResponsePacket __repr__
@@ -183,7 +183,8 @@ class ResponsePacket(CommunicationPacket):
         # this time collections also contains, for every collection,
         # the size in frames of each item inside of it
 
-        collections = ((self.noise_table, 2),
+        collections = ((self.noise_tables, 1),
+                       *((table, 2) for table in self.noise_tables),
                        (self.new_node_list, PHYSICAL_ADDRESS_FRAMES + 1))
 
         frames += sum(len(collection or ()) * weight
