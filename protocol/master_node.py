@@ -46,8 +46,8 @@ class MasterNode(ReThunderNode):
 
         super().__init__(env, transmission_speed)
 
-        self.__nodes_graph = nx.Graph()
-        self.__shortest_paths_tree = nx.Graph()
+        self.__node_graph = nx.Graph()           # type: nx.Graph
+        self.__shortest_paths_tree = nx.Graph()  # type: nx.Graph
         self.__send_cond = BroadcastConditionVar(self.env)
         self.__current_message = None
 
