@@ -117,3 +117,18 @@ class MasterNode(ReThunderNode):
 
         request_msg = self.__current_message  # type: RequestPacket
         self.__current_message = None
+
+    def __update_node_graph(self, dest, packet: ResponsePacket):
+
+        node_graph = self.__node_graph
+        sptree = self.__shortest_paths_tree
+        return_path = nx.shortest_path(sptree, dest, 0, 'weight')
+
+        for source_node, noise_table in zip(return_path, packet.noise_tables):
+
+            for dest_node, noise_level in noise_table.items():
+
+                node_graph[source_node][dest_node]['noise'] = noise_level
+
+        self.__shortest_paths_tree = shortest_paths_tree(node_graph, 0, 'noise')
+
