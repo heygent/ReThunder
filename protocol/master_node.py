@@ -96,9 +96,6 @@ class MasterNode(ReThunderNode):
                 'A MasterNode received something different than a Packet.'
             )
 
-        if packet.code == PacketCodes.hello:
-            yield self.__on_received_hello(packet)
-
         if packet.response:
             yield self.__on_received_response(packet)
 
@@ -106,10 +103,6 @@ class MasterNode(ReThunderNode):
 
     @run_process
     def __on_send_request(self, packet):
-        raise NotImplemented
-
-    @run_process
-    def __on_received_hello(self, packet: HelloRequestPacket):
         raise NotImplemented
 
     @run_process
