@@ -6,6 +6,7 @@ from itertools import dropwhile
 from typing import List, Dict, Optional
 
 from protocol.packet_fields import FlagField, DataField, FixedSizeInt
+from protocol.tracer import Tracer
 
 PHYSICAL_ADDRESS_FRAMES = 2
 
@@ -154,7 +155,7 @@ class RequestPacket(CommunicationPacket):
 
         super().__init__()
 
-        self.tracers_list = None   # type: Optional[List[int]]
+        self.tracers_list = None   # type: Optional[List[Tracer]]
         self.path = None           # type: Optional[List[int]]
 
     def __repr__(self):
