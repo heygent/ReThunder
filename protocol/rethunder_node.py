@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from infrastructure.message import CollisionSentinel
 from infrastructure.network_interface import NetworkNode
 from protocol.packet import Packet
@@ -6,8 +8,24 @@ from utils.run_process_decorator import run_process
 
 class ReThunderNode(NetworkNode):
 
+    def __init__(self, env, timeout):
+        super().__init__(env, timeout)
+        self.noise_table = defaultdict(lambda: 0)
+        self.routing_table = {}
+
     def _update_noise_table(self, packet):
-        raise NotImplemented
+        try:
+            self.noise_table[packet.source_static] = (
+                int(packet.frame_error_average() * 1000)
+            )
+        except AttributeError:
+            pass
+
+    def _update_routing_table(self, packet):
+        try:
+            self.routing_table[packet.source_static] = packet.source_dynamic
+        except AttributeError:
+            pass
 
     @run_process
     def _receive_packet_proc(self, timeout=None):
@@ -25,11 +43,12 @@ class ReThunderNode(NetworkNode):
             if received_packet is self.timeout_sentinel:
                 return self.timeout_sentinel
 
+            self._update_noise_table(received_packet)
+            self._update_routing_table(received_packet)
+
             if not isinstance(received_packet, Packet):
                 raise TypeError("A ReThunderNode received something different "
                                 "from a packet.")
-
-            self._update_noise_table(received_packet)
 
             if not received_packet.is_readable():
                 continue
