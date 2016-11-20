@@ -11,15 +11,14 @@ HELLO_TIMEOUT = 500
 
 class SlaveNode(ReThunderNode):
 
-    def __init__(self, env: simpy.Environment, transmission_speed,
-                 physical_address):
+    def __init__(self, env: simpy.Environment, transmission_speed):
 
         super().__init__(env, transmission_speed)
 
         self.static_address = None
         self.dynamic_address = None
-        self.physical_address = physical_address
         self.noise_table = defaultdict(lambda: 0)
+        self.physical_address = None
         self.last_sent_noise_table = None
 
         self.hello_timeout = HELLO_TIMEOUT
