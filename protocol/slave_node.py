@@ -27,10 +27,7 @@ class SlaveNode(ReThunderNode):
         return None, 0
 
     @run_process
-    def hello_proc(self):
-
-        hello_packet = HelloRequestPacket()
-        hello_packet.physical_address = self.physical_address
+    def run_proc(self):
 
         while not self.run_until():
 
@@ -44,8 +41,6 @@ class SlaveNode(ReThunderNode):
             if received.code == PacketCodes.hello_response:
                 raise NotImplemented
 
-    @run_process
-    def run_proc(self):
 
         yield self.hello_proc()
 
