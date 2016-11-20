@@ -23,6 +23,8 @@ class SlaveNode(ReThunderNode):
         self.hello_timeout = HELLO_TIMEOUT
         self.run_until = lambda: False
 
+    def _payload_received(self, payload):
+        return None, 0
 
     @run_process
     def hello_proc(self):
