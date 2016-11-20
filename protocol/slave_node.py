@@ -17,21 +17,12 @@ class SlaveNode(ReThunderNode):
 
         self.static_address = None
         self.dynamic_address = None
-        self.noise_table = defaultdict(lambda: 0)
         self.physical_address = None
         self.last_sent_noise_table = None
 
         self.hello_timeout = HELLO_TIMEOUT
         self.run_until = lambda: False
 
-    def _update_noise_table(self, packet: PacketWithSource):
-
-        try:
-            self.noise_table[packet.source_static] = (
-                int(packet.frame_error_average() * 1000)
-            )
-        except AttributeError:
-            pass
 
     @run_process
     def hello_proc(self):
