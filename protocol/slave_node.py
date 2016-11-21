@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import simpy
 
 from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
