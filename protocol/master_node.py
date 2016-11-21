@@ -13,13 +13,9 @@ from utils.run_process_decorator import run_process
 from utils.shortest_paths_tree import shortest_paths_tree
 
 
+
 class BusyError(Exception):
-    def __init__(self, error_msg=None):
-
-        error_msg = error_msg or ('Master is currently waiting for another '
-                                  'answer.')
-
-        super().__init__(error_msg)
+    pass
 
 
 SlaveNodeData = typing.NamedTuple(
