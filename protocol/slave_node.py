@@ -22,6 +22,9 @@ class SlaveNode(ReThunderNode):
         self.hello_timeout = HELLO_TIMEOUT
         self.run_until = lambda: False
 
+    def __repr__(self):
+        return '<SlaveNode static_address={}>'.format(self.static_address)
+
     def _on_message_received(self, payload):
         return None, 0
 
