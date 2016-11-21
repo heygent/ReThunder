@@ -4,8 +4,7 @@ import typing
 import networkx as nx
 import simpy
 
-from protocol.packet import Packet, PacketCodes, HelloRequestPacket, \
-    ResponsePacket
+from protocol.packet import Packet, ResponsePacket
 from protocol.packet import RequestPacket
 from protocol.rethunder_node import ReThunderNode
 from utils.condition_var import BroadcastConditionVar
