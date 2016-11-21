@@ -46,6 +46,9 @@ class MasterNode(ReThunderNode):
         self.__send_cond = BroadcastConditionVar(self.env)
         self.__current_message = None
 
+    def __repr__(self):
+        return '<MasterNode>'
+
     def send_message(self, dest_type: DestinationType, destination: int,
                      message, message_length):
 
