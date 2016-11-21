@@ -36,11 +36,10 @@ class DestinationType(enum.Enum):
 
 class MasterNode(ReThunderNode):
 
-    static_address = 0
-
     def __init__(self, env, transmission_speed):
 
-        super().__init__(env, transmission_speed)
+        super().__init__(env, transmission_speed,
+                         static_address=0, dynamic_address=0)
 
         self.node_graph = nx.Graph()             # type: nx.Graph
         self.__shortest_paths_tree = nx.Graph()  # type: nx.Graph
