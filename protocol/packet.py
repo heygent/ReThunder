@@ -166,10 +166,11 @@ class RequestPacket(CommunicationPacket):
     def _frame_increment(self):
 
         frames = self.__STATIC_FRAMES
-        collections = (self.tracers_list, self.path)
 
         frames += int(self.new_static_addr is not None)
-        frames += sum(len(collection or ()) for collection in collections)
+        frames += len(self.path or ())
+        frames += sum(tracer.number_of_frames()
+                      for tracer in self.tracers_list or ())
 
         return frames
 
