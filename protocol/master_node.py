@@ -1,4 +1,5 @@
 import enum
+import logging
 import typing
 
 import networkx as nx
@@ -11,6 +12,7 @@ from utils.condition_var import BroadcastConditionVar
 from utils.run_process_decorator import run_process
 from utils.shortest_paths_tree import shortest_paths_tree
 
+logger = logging.getLogger(__name__)
 
 
 class BusyError(Exception):
@@ -89,9 +91,10 @@ class MasterNode(ReThunderNode):
     def __on_reception(self, packet):
 
         if not isinstance(packet, Packet):
-            raise TypeError(
-                'A MasterNode received something different than a Packet.'
+            logger.error(
+                '{} received something different than a Packet.'.format(self)
             )
+            return
 
         if packet.response:
             yield self.__on_received_response(packet)
