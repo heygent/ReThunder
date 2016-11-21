@@ -13,6 +13,11 @@ class ReThunderNode(NetworkNode):
         self.noise_table = defaultdict(lambda: 0)
         self.routing_table = {}
 
+    def __repr__(self):
+        return '<ReThunderNode static_address={}>'.format(
+            self.static_address, self.dynamic_address
+        )
+
     def _update_noise_table(self, packet):
         try:
             self.noise_table[packet.source_static] = (
