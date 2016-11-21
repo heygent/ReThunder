@@ -28,10 +28,10 @@ class Packet(metaclass=abc.ABCMeta):
     code        = DataField('heading', 3, 4)
     token       = DataField('heading', 0, 3)
 
-    code_is_node_init         = FlagField('code', 3)
-    code_has_path             = FlagField('code', 2)
-    code_is_addressing_static = FlagField('code', 1)
-    code_has_new_logic_addr   = FlagField('code', 0)
+    code_is_node_init            = FlagField('code', 3)
+    code_destination_is_endpoint = FlagField('code', 2)
+    code_is_addressing_static    = FlagField('code', 1)
+    code_has_new_logic_addr      = FlagField('code', 0)
 
     def __init__(self):
         self.__frame_errors = defaultdict(int)

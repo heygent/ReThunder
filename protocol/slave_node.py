@@ -69,8 +69,7 @@ class SlaveNode(ReThunderNode):
 
             return packet
 
-        # I am a tappa
-        if packet.code_has_path:
+        if packet.code_destination_is_endpoint:
 
             next_address = packet.path.pop()
 
