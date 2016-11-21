@@ -1,9 +1,12 @@
+import logging
 from collections import defaultdict
 
 from infrastructure.message import CollisionSentinel
 from infrastructure.network_interface import NetworkNode
 from protocol.packet import Packet
 from utils.run_process_decorator import run_process
+
+logger = logging.getLogger(__name__)
 
 
 class ReThunderNode(NetworkNode):
@@ -52,8 +55,11 @@ class ReThunderNode(NetworkNode):
             self._update_routing_table(received_packet)
 
             if not isinstance(received_packet, Packet):
-                raise TypeError("A ReThunderNode received something different "
-                                "from a packet.")
+                logger.error(
+                    "{} received something different from a "
+                    "packet".format(self)
+                )
+                continue
 
             if not received_packet.is_readable():
                 continue
