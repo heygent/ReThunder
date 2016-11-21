@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import simpy
 
-from protocol.packet import PacketCodes, HelloRequestPacket, PacketWithSource
+from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
 from utils.run_process_decorator import run_process
 
@@ -31,22 +31,27 @@ class SlaveNode(ReThunderNode):
 
         while not self.run_until():
 
-            # todo usa unita' di misura coerente per la lunghezza dei messaggi
-            yield self._send_to_network_proc(
-                hello_packet, hello_packet.number_of_frames()
-            )
+            received = yield self._receive_packet_proc()  # type: Packet
 
-            received = yield self._receive_packet_proc(self.hello_timeout)
+            if received.code == PacketCodes.hello:
+                raise NotImplemented('SlaveNode received an hello message, '
+                                     'which cannot be handled')
 
-            if received.code == PacketCodes.hello_response:
-                raise NotImplemented
+            response = None
+
+            if isinstance(received, RequestPacket):
+                response = self.__request_packet_received(received)
+
+            if response is not None:
+                yield self._send_to_network_proc(response,
+                                                 response.number_of_frames())
 
 
-        yield self.hello_proc()
 
-        while not self.run_until():
 
-            received = yield self._receive_packet_proc()
+
+
+
 
 
 
