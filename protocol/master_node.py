@@ -97,11 +97,11 @@ class MasterNode(ReThunderNode):
         if packet.response:
             yield self.__on_received_response(packet)
 
-        raise NotImplemented
+        raise NotImplementedError
 
     @run_process
     def __on_send_request(self, packet):
-        raise NotImplemented
+        raise NotImplementedError
 
     @run_process
     def __on_received_response(self, response_msg: ResponsePacket):

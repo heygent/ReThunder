@@ -62,15 +62,15 @@ class UpdatableProcess(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _on_start(self, init_value):
-        raise NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def _on_update(self, update_value):
-        raise NotImplemented
+        raise NotImplementedError
 
     @abc.abstractmethod
     def _on_stop(self, stop_value):
-        raise NotImplemented
+        raise NotImplementedError
 
     @property
     def _running(self):
