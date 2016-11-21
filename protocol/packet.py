@@ -159,8 +159,8 @@ class RequestPacket(CommunicationPacket):
         self.path = None           # type: Optional[List[int]]
 
     def __repr__(self):
-        return '<RequestPacket source={} dest={}>'.format(
-            self.source_static, self.destination
+        return '<RequestPacket source={}, next_hop={}>'.format(
+            self.source_static, self.next_hop
         )
 
     def _frame_increment(self):
