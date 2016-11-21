@@ -17,12 +17,22 @@ class SlaveNode(ReThunderNode):
                          static_address, dynamic_address)
 
         self.last_sent_noise_table = None
+        self.__new_dynamic_address = None
 
         self.hello_timeout = HELLO_TIMEOUT
         self.run_until = lambda: False
 
     def _on_message_received(self, payload):
         return None, 0
+
+    def __set_new_dynamic_address(self, address):
+        self.__new_dynamic_address = address
+
+    def __update_dynamic_address(self):
+
+        self.dynamic_address = (self.__new_dynamic_address or
+                                self.dynamic_address)
+        self.__new_dynamic_address = None
 
     @run_process
     def run_proc(self):
