@@ -131,4 +131,22 @@ class SlaveNode(ReThunderNode):
 
         return response
 
+    def __response_packet_received(self, packet: ResponsePacket):
 
+        if not self.__i_am_next_hop(packet):
+            return None
+
+        if self.__response_waiting_address is None:
+            logger.warning('{} received a ResponseMessage for which there was '
+                           'no answering address'.format(self))
+            return None
+
+        packet.source_static = self.static_address
+        packet.source_logic = self.dynamic_address
+
+        packet.next_hop = self.__response_waiting_address
+        self.__response_waiting_address = None
+
+        packet.noise_tables.append(self.noise_table)
+
+        return packet
