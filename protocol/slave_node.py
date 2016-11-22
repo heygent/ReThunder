@@ -88,9 +88,7 @@ class SlaveNode(ReThunderNode):
 
             return packet
 
-        if packet.code_destination_is_endpoint:
-
-            next_address = packet.path.pop()
+        if not packet.code_destination_is_endpoint:
 
             if packet.tracers_list[-1].offset == 0:
 
@@ -101,13 +99,12 @@ class SlaveNode(ReThunderNode):
                 )
 
                 if code & TracerCodes.new_address.value:
-                    self.dynamic_address = next_address
-                    next_address = packet.path.pop()
+                    packet.new_logic_addr = packet.path.pop()
 
             else:
                 packet.tracers_list[-1].offset -= 1
 
-            packet.destination = next_address
+            packet.destination = packet.path.pop()
 
             return packet
 
