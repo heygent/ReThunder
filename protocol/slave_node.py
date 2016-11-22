@@ -78,8 +78,8 @@ class SlaveNode(ReThunderNode):
         packet.source_static = self.static_address
         packet.source_logic = self.dynamic_address
 
-        if packet.next_hop != packet.destination:
 
+        if not packet.destination_reached():
             packet.next_hop = max(
                 (dyn_address for dyn_address in self.routing_table.keys()
                  if dyn_address < packet.destination),
@@ -111,9 +111,14 @@ class SlaveNode(ReThunderNode):
 
             return packet
 
-        # I'm the endpoint
+        return self.__make_response_packet(packet)
 
-        res_payload, res_payload_len = self._payload_received(
+    def __make_response_packet(self, packet):
+
+        logger.info('{} received a payload'.format(self),
+                    extra={'payload': packet.payload})
+
+        res_payload, res_payload_len = self._on_message_received(
             packet.payload
         )
 
