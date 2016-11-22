@@ -80,6 +80,9 @@ class SlaveNode(ReThunderNode):
         packet.source_static = self.static_address
         packet.source_logic = self.dynamic_address
 
+        if packet.code_has_new_logic_addr:
+            self.__set_new_dynamic_address(packet.new_logic_addr)
+
         if self.__response_waiting_address is not None:
             logger.error(
                 '{} received {} while waiting for another RequestPacket. The '
