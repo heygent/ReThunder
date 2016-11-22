@@ -1,4 +1,5 @@
 import simpy
+import logging
 
 from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
@@ -6,6 +7,8 @@ from protocol.tracer import TracerCodes
 from utils.run_process_decorator import run_process
 
 HELLO_TIMEOUT = 500
+
+logger = logging.getLogger(__name__)
 
 
 class SlaveNode(ReThunderNode):
@@ -37,6 +40,16 @@ class SlaveNode(ReThunderNode):
                                 self.dynamic_address)
         self.__new_dynamic_address = None
 
+    def __i_am_next_hop(self, packet):
+
+        i_am_next_hop = (packet.code_is_addressing_static and
+                         self.static_address == packet.next_hop)
+
+        i_am_next_hop |= (not packet.code_is_addressing_static and
+                          self.dynamic_address == packet.next_hop)
+
+        return i_am_next_hop
+
     @run_process
     def run_proc(self):
 
@@ -59,13 +72,7 @@ class SlaveNode(ReThunderNode):
 
     def __request_packet_received(self, packet: RequestPacket):
 
-        i_am_next_hop = (packet.code_is_addressing_static and
-                         self.static_address == packet.next_hop)
-
-        i_am_next_hop |= (not packet.code_is_addressing_static and
-                          self.dynamic_address == packet.next_hop)
-
-        if not i_am_next_hop:
+        if not self.__i_am_next_hop(packet):
             return None
 
         packet.source_static = self.static_address
