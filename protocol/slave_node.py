@@ -80,7 +80,7 @@ class SlaveNode(ReThunderNode):
 
         if packet.next_hop != packet.destination:
 
-            packet.destination = max(
+            packet.next_hop = max(
                 (dyn_address for dyn_address in self.routing_table.keys()
                  if dyn_address < packet.destination),
                 self.dynamic_address
