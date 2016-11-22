@@ -60,8 +60,9 @@ class SlaveNode(ReThunderNode):
             received = yield self._receive_packet_proc()  # type: Packet
 
             if received.code == PacketCodes.hello:
-                raise NotImplemented('SlaveNode received an hello message, '
-                                     'which cannot be handled')
+                logger.error('{} received an hello message, '
+                             'which cannot be handled'.format(self))
+                continue
 
             response = None
 
