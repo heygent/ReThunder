@@ -1,3 +1,4 @@
+import copy
 import simpy
 import logging
 
@@ -21,6 +22,7 @@ class SlaveNode(ReThunderNode):
 
         self.last_sent_noise_table = None
         self.__new_dynamic_address = None
+        self.__response_waiting_address = None
 
         self.hello_timeout = HELLO_TIMEOUT
         self.run_until = lambda: False
@@ -78,6 +80,14 @@ class SlaveNode(ReThunderNode):
         packet.source_static = self.static_address
         packet.source_logic = self.dynamic_address
 
+        if self.__response_waiting_address is not None:
+            logger.error(
+                '{} received {} while waiting for another RequestPacket. The '
+                'packet will not be forwarded'.format(self, packet),
+                extra={'request': copy.copy(packet)}
+            )
+
+        self.__response_waiting_address = packet.source_static
 
         if not packet.destination_reached():
             packet.next_hop = max(
