@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from infrastructure.message import CollisionSentinel
 from infrastructure.network_interface import NetworkNode
-from protocol.packet import Packet
+from protocol.packet import Packet, PacketWithSource
 from utils.run_process_decorator import run_process
 
 logger = logging.getLogger(__name__)
@@ -25,19 +25,17 @@ class ReThunderNode(NetworkNode):
             self.static_address, self.dynamic_address
         )
 
-    def _update_noise_table(self, packet):
-        try:
+    def _update_noise_table(self, packet: Packet):
+
+        if isinstance(packet, PacketWithSource):
             self.noise_table[packet.source_static] = (
                 int(packet.frame_error_average() * 1000)
             )
-        except AttributeError:
-            pass
 
-    def _update_routing_table(self, packet):
-        try:
-            self.routing_table[packet.source_static] = packet.source_dynamic
-        except AttributeError:
-            pass
+    def _update_routing_table(self, packet: Packet):
+
+        if isinstance(packet, PacketWithSource):
+            self.routing_table[packet.source_static] = packet.source_logic
 
     @run_process
     def _receive_packet_proc(self, timeout=None):
@@ -69,4 +67,3 @@ class ReThunderNode(NetworkNode):
                 continue
 
             return received_packet
-
