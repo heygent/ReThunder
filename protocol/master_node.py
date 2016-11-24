@@ -18,13 +18,14 @@ class BusyError(Exception):
 
 class MasterNode(ReThunderNode):
 
-    def __init__(self, env, transmission_speed):
+    def __init__(self, env, transmission_speed, application):
 
         super().__init__(env, transmission_speed,
                          static_address=0, dynamic_address=0)
 
         self.node_graph = nx.Graph()             # type: nx.Graph
         self.__shortest_paths_tree = nx.Graph()  # type: nx.Graph
+        self.application = application
         self.__send_cond = BroadcastConditionVar(self.env)
         self.__current_message = None
 
