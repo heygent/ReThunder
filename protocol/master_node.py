@@ -16,22 +16,6 @@ class BusyError(Exception):
     pass
 
 
-SlaveNodeData = typing.NamedTuple(
-    'SlaveNodeData', (
-        ('mac_address', int),
-        ('static_address', int),
-        ('logic_address', int),
-        ('effective_address', int)
-    )
-)
-
-
-class DestinationType(enum.Enum):
-    physical = 0
-    static   = 1
-    dynamic  = 2
-
-
 class MasterNode(ReThunderNode):
 
     def __init__(self, env, transmission_speed):
