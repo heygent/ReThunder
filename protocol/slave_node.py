@@ -99,6 +99,7 @@ class SlaveNode(ReThunderNode):
                 'packet will not be forwarded'.format(self, packet),
                 extra={'request': copy(packet)}
             )
+            return None
 
         self.__response_waiting_address = packet.source_static
 
