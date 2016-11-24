@@ -29,9 +29,6 @@ class SlaveNode(ReThunderNode):
     def __repr__(self):
         return '<SlaveNode static_address={}>'.format(self.static_address)
 
-    def _on_message_received(self, payload):
-        return None, 0
-
     def __set_new_dynamic_address(self, address):
         self.__new_dynamic_address = address
 
