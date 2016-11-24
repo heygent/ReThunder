@@ -197,9 +197,6 @@ class ResponsePacket(CommunicationPacket):
 
         frames = self.__STATIC_FRAMES
 
-        # this time collections also contains, for every collection,
-        # the size in frames of each item inside of it
-
         collections = ((self.noise_tables, 1),
                        *((table, 2) for table in self.noise_tables),
                        (self.new_node_list, PHYSICAL_ADDRESS_FRAMES + 1))
