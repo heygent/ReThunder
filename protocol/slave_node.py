@@ -1,6 +1,6 @@
-import copy
 import simpy
 import logging
+from copy import copy
 
 from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
@@ -88,7 +88,7 @@ class SlaveNode(ReThunderNode):
             logger.error(
                 '{} received {} while waiting for another RequestPacket. The '
                 'packet will not be forwarded'.format(self, packet),
-                extra={'request': copy.copy(packet)}
+                extra={'request': copy(packet)}
             )
 
         self.__response_waiting_address = packet.source_static
