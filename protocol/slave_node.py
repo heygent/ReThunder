@@ -7,8 +7,6 @@ from protocol.rethunder_node import ReThunderNode
 from protocol.tracer import TracerCodes
 from utils.run_process_decorator import run_process
 
-HELLO_TIMEOUT = 500
-
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +22,6 @@ class SlaveNode(ReThunderNode):
         self.__new_dynamic_address = None
         self.__response_waiting_address = None
 
-        self.hello_timeout = HELLO_TIMEOUT
         self.run_until = lambda: False
 
     def __repr__(self):
