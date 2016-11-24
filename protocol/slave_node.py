@@ -5,6 +5,7 @@ from copy import copy
 from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
 from protocol.tracer import TracerCodes
+from protocol.application import Application, DefaultApplication
 from utils.run_process_decorator import run_process
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ class SlaveNode(ReThunderNode):
         self.__response_waiting_address = None
 
         self.run_until = lambda: False
+        self.application = DefaultApplication()  # type: Application
 
     def __repr__(self):
         return '<SlaveNode static_address={}>'.format(self.static_address)
@@ -126,10 +128,6 @@ class SlaveNode(ReThunderNode):
         logger.info('{} received a payload'.format(self),
                     extra={'payload': packet.payload})
 
-        res_payload, res_payload_len = self._on_message_received(
-            packet.payload
-        )
-
         response = ResponsePacket()
 
         response.source_static = self.static_address
@@ -137,8 +135,10 @@ class SlaveNode(ReThunderNode):
 
         response.noise_tables.append(self.noise_table)
 
-        response.payload = res_payload
-        response.payload_length = res_payload_len
+        response.payload, response.payload_length = \
+            self.application.message_received(
+                packet.payload, packet.payload_length
+            )
 
         return response
 
