@@ -54,16 +54,26 @@ class SlaveNode(ReThunderNode):
         while not self.run_until():
 
             received = yield self._receive_packet_proc()  # type: Packet
+            response = None
 
             if received.code == PacketCodes.hello:
                 logger.error('{} received an hello message, '
                              'which cannot be handled'.format(self))
-                continue
 
-            response = None
+            elif received.response:
 
-            if isinstance(received, RequestPacket):
-                response = self.__request_packet_received(received)
+                if isinstance(received, ResponsePacket):
+                    response = self.__response_packet_received(received)
+                else:
+                    logger.error('{} received a malformed packet. Ignoring',
+                                 extra={'packet': copy(received)})
+            else:
+
+                if isinstance(received, RequestPacket):
+                    response = self.__request_packet_received(received)
+                else:
+                    logger.error('{} received a malformed packet. Ignoring',
+                                 extra={'packet': copy(received)})
 
             if response is not None:
                 yield self._send_to_network_proc(response,
