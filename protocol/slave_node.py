@@ -143,6 +143,7 @@ class SlaveNode(ReThunderNode):
 
         response.source_static = self.static_address
         response.source_logic = self.dynamic_address
+        response.next_hop = packet.source_static
 
         response.noise_tables.append(self.noise_table)
 
