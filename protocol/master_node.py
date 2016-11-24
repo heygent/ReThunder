@@ -33,6 +33,58 @@ class MasterNode(ReThunderNode):
     def __repr__(self):
         return '<MasterNode>'
 
+    def __switch_logic_addresses(self, log_addr_a, log_addr_b):
+        raise NotImplementedError
+
+    def __readdress_nodes(self):
+
+        sptree = self.__sptree  # type: nx.DiGraph
+        assert nx.is_tree(sptree)
+
+        next_previous_address = 0
+
+        for current_address in range(1, 1 << 11):
+
+            if current_address not in sptree:
+                continue
+
+            previous_address = next_previous_address
+            next_previous_address = current_address
+
+            while True:
+                father, = sptree.predecessors(current_address)
+
+                if father > current_address:
+                    self.__switch_logic_addresses(current_address, father)
+                else:
+                    break
+
+            if father == previous_address:
+                continue
+
+            try:
+                greatest_son = max(sptree.successors_iter(previous_address))
+                self.__switch_logic_addresses(current_address, greatest_son)
+                continue
+
+            except ValueError:
+                pass
+
+            try:
+                ancestor_of_previous, = sptree.predecessors(previous_address)
+            except IndexError:
+                continue
+
+            while ancestor_of_previous != 0 and father != ancestor_of_previous:
+
+                greatest_son = max(sptree.successors_iter(ancestor_of_previous))
+
+                if greatest_son > current_address:
+                    self.__switch_logic_addresses(current_address, greatest_son)
+                    continue
+
+                ancestor_of_previous, = sptree.predecessors(previous_address)
+
     def send_message(self, destination_static_addr: int,
                      message, message_length):
 
@@ -108,4 +160,3 @@ class MasterNode(ReThunderNode):
                 node_graph[source_node][dest_node]['noise'] = noise_level
 
         self.__shortest_paths_tree = shortest_paths_tree(node_graph, 0, 'noise')
-
