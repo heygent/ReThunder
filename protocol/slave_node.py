@@ -48,6 +48,9 @@ class SlaveNode(ReThunderNode):
 
         return i_am_next_hop
 
+    def __reset_response_wait(self):
+        self.__response_waiting_address = None
+
     @run_process
     def run_proc(self):
 
