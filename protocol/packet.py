@@ -184,6 +184,7 @@ class ResponsePacket(CommunicationPacket):
 
     def __init__(self):
         super().__init__()
+        self.response = True
         self.noise_tables = []      # type: List[Dict[int, int]]
         self.new_node_list = []     # type: List[int]
 
