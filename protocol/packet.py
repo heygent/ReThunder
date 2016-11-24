@@ -189,8 +189,9 @@ class ResponsePacket(CommunicationPacket):
         self.new_node_list = []     # type: List[int]
 
     def __repr__(self):
-        # todo improve ResponsePacket __repr__
-        return '<ResponsePacket source={}>'.format(self.source_static)
+        return '<ResponsePacket source={}, next_hop={}>'.format(
+            self.source_static, self.next_hop
+        )
 
     def _frame_increment(self):
 
