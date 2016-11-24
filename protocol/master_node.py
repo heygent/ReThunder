@@ -33,13 +33,14 @@ class MasterNode(ReThunderNode):
     def __repr__(self):
         return '<MasterNode>'
 
-    def send_message(self, dest_type: DestinationType, destination: int,
+    def send_message(self, destination_static_addr: int,
                      message, message_length):
 
         if self.__current_message is not None:
-            raise BusyError
+            raise BusyError("{} is waiting for another message "
+                            "response.".format(self))
 
-        self.__send_cond.broadcast((dest_type, destination, message,
+        self.__send_cond.broadcast((destination_static_addr, message,
                                     message_length))
 
     def send_packet(self, packet):
