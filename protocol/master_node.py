@@ -1,16 +1,13 @@
-import enum
 import logging
-import typing
 
 import networkx as nx
 import simpy
 
 from protocol.packet import Packet, ResponsePacket
-from protocol.packet import RequestPacket
 from protocol.rethunder_node import ReThunderNode
 from utils.condition_var import BroadcastConditionVar
 from utils.run_process_decorator import run_process
-from utils.shortest_paths_tree import shortest_paths_tree
+from utils.graph import shortest_paths_tree
 
 logger = logging.getLogger(__name__)
 
