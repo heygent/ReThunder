@@ -39,14 +39,7 @@ class SlaveNode(ReThunderNode):
         self.__new_dynamic_address = None
 
     def __i_am_next_hop(self, packet):
-
-        i_am_next_hop = (packet.code_is_addressing_static and
-                         self.static_address == packet.next_hop)
-
-        i_am_next_hop |= (not packet.code_is_addressing_static and
-                          self.dynamic_address == packet.next_hop)
-
-        return i_am_next_hop
+        return self.static_address == packet.next_hop
 
     def __reset_response_wait(self):
         self.__response_waiting_address = None
