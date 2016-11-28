@@ -13,3 +13,10 @@ def shortest_paths_tree(G: nx.Graph, source, weight='weight'):
 
     return sptree
 
+
+# noinspection PyPep8Naming
+def preorder_tree_dfs(G: nx.DiGraph, start, action):
+
+    action(start)
+    for node in G.successors_iter(start):
+        preorder_tree_dfs(G, node, action)
