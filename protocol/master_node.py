@@ -1,13 +1,15 @@
 import logging
+import itertools
 
 import networkx as nx
 import simpy
 
 from protocol.packet import Packet, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
+from protocol.node_data_manager import NodeDataManager
 from utils.condition_var import BroadcastConditionVar
 from utils.run_process_decorator import run_process
-from utils.graph import shortest_paths_tree
+from utils.graph import shortest_paths_tree, preorder_tree_dfs
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +27,42 @@ class MasterNode(ReThunderNode):
 
         self.node_graph = nx.Graph()  # type: nx.Graph
         self.application = application
-        # todo inizializza albero
         self.__sptree = None  # type: nx.DiGraph
         self.__send_cond = BroadcastConditionVar(self.env)
         self.__current_message = None
+        self.__node_manager = NodeDataManager()
 
     def __repr__(self):
         return '<MasterNode>'
 
     def __switch_logic_addresses(self, log_addr_a, log_addr_b):
         raise NotImplementedError
+    def init_from_static_addr_graph(self, addr_graph, initial_noise_value=0.5):
+
+        if not 0 <= initial_noise_value <= 3:
+            raise ValueError('initial_noise_value must be between 0 and 3')
+
+        manager = self.__node_manager
+
+        node_graph = nx.relabel_nodes(addr_graph, manager.create, copy=True)
+
+        for n1, n2 in node_graph.edges_iter():
+            node_graph[n1][n2]['noise'] = initial_noise_value
+
+        self.node_graph = node_graph
+
+        self.__init_sptree()
+
+    def __init_sptree(self):
+
+        nodes = self.__node_manager
+        sptree = shortest_paths_tree(self.node_graph, nodes[0], 'noise')
+        addr_iter = itertools.count()
+
+        preorder_tree_dfs(
+            sptree, 0, lambda n: setattr(n, 'logic_address', next(addr_iter))
+        )
+
 
     def __readdress_nodes(self):
 
