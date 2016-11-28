@@ -66,52 +66,57 @@ class MasterNode(ReThunderNode):
 
     def __readdress_nodes(self):
 
+        nodes = self.__node_manager
+
         sptree = self.__sptree  # type: nx.DiGraph
         assert nx.is_tree(sptree)
 
-        next_previous_address = 0
+        next_previous_node = nodes[0]
 
-        for current_address in range(1, 1 << 11):
+        # Addresses, not nodes, need to be iterated, because the address
+        # associated with a node changes during the execution of the algorithm.
 
-            if current_address not in sptree:
-                continue
+        for logic_addr in nodes.logic_addresses_iter():
+            node = nodes.from_logic_address(logic_addr)
 
-            previous_address = next_previous_address
-            next_previous_address = current_address
+            previous_node = next_previous_node
+            next_previous_node = node
 
             while True:
-                father, = sptree.predecessors(current_address)
+                father, = sptree.predecessors(node)
 
-                if father > current_address:
-                    self.__switch_logic_addresses(current_address, father)
+                if father.logic_address > node.logic_address:
+                    node.swap_logic_address(father)
                 else:
                     break
 
-            if father == previous_address:
+            if father == previous_node:
                 continue
 
             try:
-                greatest_son = max(sptree.successors_iter(previous_address))
-                self.__switch_logic_addresses(current_address, greatest_son)
+                greatest_son = max(sptree.successors_iter(previous_node),
+                                   key=lambda x: x.logic_address)
+                node.swap_logic_address(greatest_son)
                 continue
 
             except ValueError:
                 pass
 
             try:
-                ancestor_of_previous, = sptree.predecessors(previous_address)
+                ancestor_of_previous, = sptree.predecessors(previous_node)
             except IndexError:
                 continue
 
             while ancestor_of_previous != 0 and father != ancestor_of_previous:
 
-                greatest_son = max(sptree.successors_iter(ancestor_of_previous))
+                greatest_son = max(sptree.successors_iter(ancestor_of_previous),
+                                   key=lambda x: x.logic_address)
 
-                if greatest_son > current_address:
-                    self.__switch_logic_addresses(current_address, greatest_son)
+                if greatest_son.logic_address > node.logic_address:
+                    node.swap_logic_address(greatest_son)
                     continue
 
-                ancestor_of_previous, = sptree.predecessors(previous_address)
+                ancestor_of_previous, = sptree.predecessors(previous_node)
 
     def send_message(self, destination_static_addr: int,
                      message, message_length):
