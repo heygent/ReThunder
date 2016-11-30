@@ -225,7 +225,9 @@ class MasterNode(ReThunderNode):
 
     @run_process
     def __on_received_response(self, response_msg: ResponsePacket):
-        raise NotImplementedError
+        self.__update_node_graph(response_msg)
+        self.application.message_received(response_msg.payload,
+                                          response_msg.payload_length)
 
     def __update_node_graph(self, dest, packet: ResponsePacket):
 
