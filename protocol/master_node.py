@@ -45,27 +45,34 @@ class MasterNode(ReThunderNode):
         if not 0 <= initial_noise_value <= 3:
             raise ValueError('initial_noise_value must be between 0 and 3')
 
-        manager = self.__node_manager
+        nodes = self.__node_manager
 
-        node_graph = nx.relabel_nodes(addr_graph, manager.create, copy=True)
+        # nx.relabel_nodes accepts a function for relabeling nodes.
+        # It is poorly documented though, to the point that the type checker
+        # fires warnings if you do.
+
+        # noinspection PyTypeChecker
+        node_graph = nx.relabel_nodes(addr_graph, nodes.create, copy=True)
 
         for n1, n2 in node_graph.edges_iter():
             node_graph[n1][n2]['noise'] = initial_noise_value
 
         self.node_graph = node_graph
+        self.__update_sptree()
 
-        self.__init_sptree()
-
-    def __init_sptree(self):
-
-        nodes = self.__node_manager
-        sptree = shortest_paths_tree(self.node_graph, nodes[0], 'noise')
         addr_iter = itertools.count()
 
-        preorder_tree_dfs(
-            sptree, 0, lambda n: setattr(n, 'logic_address', next(addr_iter))
-        )
+        def assign_logic_address(n: NodeDataT):
+            n.logic_address = next(addr_iter)
 
+        preorder_tree_dfs(self.__sptree, nodes[0], action=assign_logic_address)
+
+    def __update_sptree(self):
+        nodes = self.__node_manager
+
+        shortest_paths = nx.shortest_path(self.node_graph, nodes[0], 'noise')
+        self.__sptree = shortest_paths_tree(shortest_paths)
+        self.__shortest_paths = shortest_paths
 
     def __readdress_nodes(self):
 
