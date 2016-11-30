@@ -141,6 +141,9 @@ class MasterNode(ReThunderNode):
 
     @run_process
     def run(self):
+        if self.__sptree is None:
+            raise ValueError("{} must be initialized before it's started.")
+
         env = self.env
 
         while True:
@@ -158,6 +161,10 @@ class MasterNode(ReThunderNode):
             assert any(e.processed for e in events), "Spurious wake"
 
             if send_ev.processed:
+                assert self.__current_message is None, (
+                    "{} has not been prevented to send a message while "
+                    "waiting for a response, so it is in an invalid state."
+                    .format(self))
                 yield self.__on_send_request(send_ev.value)
 
             if recv_ev.processed:
@@ -169,14 +176,20 @@ class MasterNode(ReThunderNode):
 
         if not isinstance(packet, Packet):
             logger.error(
-                '{} received something different than a Packet.'.format(self)
+                '{} received something different than a Packet.'.format(self),
+                extra={'received': packet}
             )
             return
 
         if packet.response:
             yield self.__on_received_response(packet)
-
-        raise NotImplementedError
+        elif packet.code == PacketCodes.hello.value:
+            logger.warning(
+                '{} received a hello message, which cannot be handled.'
+                .format(self)
+            )
+        else:
+            return
 
     @run_process
     def __on_send_request(self, message, length, destination_addr):
