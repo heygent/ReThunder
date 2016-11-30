@@ -50,7 +50,7 @@ class NodeDataManager(collections.Mapping):
 
         def __eq__(self, other):
             return (self.static_address == other.static_address and
-                    type(self) is type(other))
+                    self.__node_manager is other.__node_manager)
 
         def __hash__(self):
             return self.static_address
