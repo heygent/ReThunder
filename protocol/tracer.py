@@ -1,9 +1,6 @@
-import enum
 
-
-class TracerCodes(enum.Enum):
-    new_address = 0b01
-    static_addressing = 0b10
+NEW_ADDRESS = 0b01
+STATIC_ADDRESSING = 0b10
 
 
 class Tracer:
