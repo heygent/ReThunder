@@ -229,16 +229,19 @@ class MasterNode(ReThunderNode):
         self.application.message_received(response_msg.payload,
                                           response_msg.payload_length)
 
-    def __update_node_graph(self, dest, packet: ResponsePacket):
+    def __update_node_graph(self, packet: ResponsePacket):
 
         node_graph = self.node_graph
-        sptree = self.__shortest_paths_tree
-        return_path = nx.shortest_path(sptree, dest, 0, 'weight')
+        message_path = self.__current_message_path
 
-        for source_node, noise_table in zip(return_path, packet.noise_tables):
+        for node in message_path:
+            node.current_logic_address = node.logic_address
+
+        for source_node, noise_table in zip(reversed(message_path),
+                                            packet.noise_tables):
 
             for dest_node, noise_level in noise_table.items():
 
                 node_graph[source_node][dest_node]['noise'] = noise_level
 
-        self.__shortest_paths_tree = shortest_paths_tree(node_graph, 0, 'noise')
+        self.__update_sptree()
