@@ -174,9 +174,6 @@ class RequestPacket(CommunicationPacket):
 
         return frames
 
-    def destination_reached(self):
-        return self.next_hop == self.destination
-
 
 class ResponsePacket(CommunicationPacket):
 
