@@ -34,8 +34,8 @@ class SlaveNode(ReThunderNode):
 
     def __update_dynamic_address(self):
 
-        self.dynamic_address = (self.__new_dynamic_address or
-                                self.dynamic_address)
+        self.logic_address = (self.__new_dynamic_address or
+                              self.logic_address)
         self.__new_dynamic_address = None
 
     def __i_am_next_hop(self, packet):
@@ -81,7 +81,7 @@ class SlaveNode(ReThunderNode):
             return None
 
         packet.source_static = self.static_address
-        packet.source_logic = self.dynamic_address
+        packet.source_logic = self.logic_address
 
         if packet.code_has_new_logic_addr:
             self.__set_new_dynamic_address(packet.new_logic_addr)
@@ -100,7 +100,7 @@ class SlaveNode(ReThunderNode):
             packet.next_hop = max(
                 (dyn_address for dyn_address in self.routing_table.keys()
                  if dyn_address < packet.destination),
-                self.dynamic_address
+                self.logic_address
             )
 
             return packet
@@ -135,7 +135,7 @@ class SlaveNode(ReThunderNode):
         response = ResponsePacket()
 
         response.source_static = self.static_address
-        response.source_logic = self.dynamic_address
+        response.source_logic = self.logic_address
         response.next_hop = packet.source_static
 
         response.noise_tables.append(self.noise_table)
@@ -158,7 +158,7 @@ class SlaveNode(ReThunderNode):
             return None
 
         packet.source_static = self.static_address
-        packet.source_logic = self.dynamic_address
+        packet.source_logic = self.logic_address
 
         packet.next_hop = self.__response_waiting_address
         self.__response_waiting_address = None

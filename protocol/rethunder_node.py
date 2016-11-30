@@ -16,13 +16,13 @@ class ReThunderNode(NetworkNode):
 
         super().__init__(env, transmission_speed)
         self.static_address = static_address
-        self.dynamic_address = dynamic_address
+        self.logic_address = dynamic_address
         self.noise_table = defaultdict(lambda: 0)
         self.routing_table = {}
 
     def __repr__(self):
         return '<ReThunderNode static_address={}>'.format(
-            self.static_address, self.dynamic_address
+            self.static_address, self.logic_address
         )
 
     def _update_noise_table(self, packet: Packet):
