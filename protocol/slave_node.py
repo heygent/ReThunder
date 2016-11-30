@@ -79,8 +79,13 @@ class SlaveNode(ReThunderNode):
                 yield self._send_to_network_proc(response,
                                                  response.number_of_frames())
 
-    def __request_packet_received(self, packet: RequestPacket):
+    def __i_am_destination(self, packet):
+        if packet.code_is_addressing_static:
+            return self.static_address == packet.destination
+        else:
+            return self.logic_address == packet.destination
 
+    def __request_packet_received(self, packet: RequestPacket):
 
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
@@ -98,7 +103,7 @@ class SlaveNode(ReThunderNode):
 
         self.__response_waiting_address = packet.source_static
 
-        if not packet.destination_reached():
+        if not self.__i_am_destination(packet):
             packet.next_hop = max(
                 (dyn_address for dyn_address in self.routing_table.keys()
                  if dyn_address < packet.destination),
