@@ -1,5 +1,6 @@
 import collections
 import weakref
+import typing
 
 from sortedcontainers import SortedDict
 
@@ -129,3 +130,5 @@ class NodeDataManager(collections.Mapping):
 
     def get_free_logic_address(self):
         return self.__get_free_address(self.__logic_to_node)
+
+NodeDataT = typing.TypeVar('NodeData', NodeDataManager.NodeData)
