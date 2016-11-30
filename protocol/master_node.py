@@ -139,9 +139,6 @@ class MasterNode(ReThunderNode):
         self.__send_cond.broadcast((destination_static_addr, message,
                                     message_length))
 
-    def send_packet(self, packet):
-        self.__send_cond.broadcast(packet)
-
     @run_process
     def run(self):
         env = self.env
