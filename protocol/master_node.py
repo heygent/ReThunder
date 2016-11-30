@@ -1,12 +1,14 @@
 import logging
 import itertools
+from typing import List, Dict
 
 import networkx as nx
 import simpy
 
 from protocol.packet import Packet, ResponsePacket
+from protocol.application import Application
 from protocol.rethunder_node import ReThunderNode
-from protocol.node_data_manager import NodeDataManager
+from protocol.node_data_manager import NodeDataManager, NodeDataT
 from utils.condition_var import BroadcastConditionVar
 from utils.run_process_decorator import run_process
 from utils.graph import shortest_paths_tree, preorder_tree_dfs
@@ -25,9 +27,10 @@ class MasterNode(ReThunderNode):
         super().__init__(env, transmission_speed,
                          static_address=0, dynamic_address=0)
 
-        self.node_graph = nx.Graph()  # type: nx.Graph
-        self.application = application
-        self.__sptree = None  # type: nx.DiGraph
+        self.node_graph = nx.Graph()    # type: nx.Graph
+        self.application = application  # type: Application
+        self.__sptree = None            # type: nx.DiGraph
+        self.__shortest_paths = None    # type: Dict[NodeDataT, List[NodeDataT]]
         self.__send_cond = BroadcastConditionVar(self.env)
         self.__current_message = None
         self.__node_manager = NodeDataManager()
