@@ -9,7 +9,9 @@ from protocol.packet import Packet, ResponsePacket
 from protocol.application import Application
 from protocol.rethunder_node import ReThunderNode
 from protocol.node_data_manager import NodeDataManager, NodeDataT
+import protocol.tracer as tracer
 from utils.condition_var import BroadcastConditionVar
+from utils.iterblocks import iterblocks
 from utils.run_process_decorator import run_process
 from utils.graph import shortest_paths_tree, preorder_tree_dfs
 
@@ -33,6 +35,7 @@ class MasterNode(ReThunderNode):
         self.__shortest_paths = None    # type: Dict[NodeDataT, List[NodeDataT]]
         self.__send_cond = BroadcastConditionVar(self.env)
         self.__current_message = None
+        self.__current_message_path = None
         self.__node_manager = NodeDataManager()
 
     def __repr__(self):
@@ -181,8 +184,36 @@ class MasterNode(ReThunderNode):
         raise NotImplementedError
 
     @run_process
-    def __on_send_request(self, packet):
-        raise NotImplementedError
+    def __on_send_request(self, message, length, destination_addr):
+        nodes = self.__node_manager
+        sptree = self.__sptree
+
+        final_destination = nodes[destination_addr]
+        shortest_path = self.__shortest_paths[final_destination]
+
+        packet = RequestPacket()
+        packet.payload = message
+        packet.payload_length = length
+
+        for node, next_node in iterblocks(shortest_path, 2, 1):
+
+            if next_node.current_logic_address == -1:
+                continue  # caso 3
+
+            candidates = [n for n in sptree.successors_iter(node)
+                          if n.current_logic_address <= destination_addr]
+
+            candidates.sort(key=lambda x: x.current_logic_address)
+
+            if (candidates[-1].current_logic_address ==
+                    candidates[-2].current_logic_address):
+                pass  # caso 4
+
+            elif candidates[-1] != next_node:
+                if next_node.logic_address != next_node.current_logic_address:
+                    pass  # caso 1
+                else:
+                    pass  # caso 2
 
     @run_process
     def __on_received_response(self, response_msg: ResponsePacket):
