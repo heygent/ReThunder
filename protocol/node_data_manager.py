@@ -12,15 +12,18 @@ class NodeDataManager(collections.Mapping):
 
     class NodeData:
 
-        def __init__(self, node_manager, static_address, logic_address=None):
+        def __init__(self, node_manager, static_address=None,
+                     logic_address=None):
 
             node_manager = weakref.proxy(node_manager)  # type: NodeDataManager
 
             self.__node_manager = node_manager
-            self.__static_address = static_address
+            self.__static_address = (
+                static_address or node_manager.get_free_static_address()
+            )
             self.__logic_address = None
             self.logic_address = logic_address
-            self.current_logic_address = logic_address
+            self.current_logic_address = None
 
             node_manager._on_create(self)
 
