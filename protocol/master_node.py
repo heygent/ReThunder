@@ -5,7 +5,7 @@ from typing import List, Dict
 import networkx as nx
 import simpy
 
-from protocol.packet import Packet, ResponsePacket
+from protocol.packet import Packet, PacketCodes, ResponsePacket, RequestPacket
 from protocol.application import Application
 from protocol.rethunder_node import ReThunderNode
 from protocol.node_data_manager import NodeDataManager, NodeDataT
