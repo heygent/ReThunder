@@ -6,7 +6,7 @@ from sortedcontainers import SortedDict
 
 class NodeDataManager(collections.Mapping):
 
-    FLAG_VALUES = {None, -1}
+    FLAG_VALUES = frozenset((None, -1))
     MAX_ADDRESS = 1 << 11
 
     class NodeData:
