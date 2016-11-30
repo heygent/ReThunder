@@ -1,16 +1,18 @@
 import networkx as nx
+from typing import List, Dict, Any
 
 
 # noinspection PyPep8Naming
-def shortest_paths_tree(G: nx.Graph, source, weight='weight'):
+def shortest_paths_tree(shortest_paths: Dict[Any, List[Any]]):
 
-    shortest_paths = nx.shortest_path(G, source=source, weight=weight)
     sptree = nx.DiGraph()
 
     for path in shortest_paths.values():
         sptree.add_path(path)
-        assert nx.is_tree(G)
 
+    if not nx.is_tree(sptree):
+        raise ValueError("The graph resulting from adding all shortest_paths "
+                         "is not a tree")
     return sptree
 
 
