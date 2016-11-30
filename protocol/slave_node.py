@@ -38,9 +38,6 @@ class SlaveNode(ReThunderNode):
                               self.logic_address)
         self.__new_dynamic_address = None
 
-    def __i_am_next_hop(self, packet):
-        return self.static_address == packet.next_hop
-
     def __reset_response_wait(self):
         self.__response_waiting_address = None
 
@@ -77,8 +74,6 @@ class SlaveNode(ReThunderNode):
 
     def __request_packet_received(self, packet: RequestPacket):
 
-        if not self.__i_am_next_hop(packet):
-            return None
 
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
@@ -148,9 +143,6 @@ class SlaveNode(ReThunderNode):
         return response
 
     def __response_packet_received(self, packet: ResponsePacket):
-
-        if not self.__i_am_next_hop(packet):
-            return None
 
         if self.__response_waiting_address is None:
             logger.warning('{} received a ResponseMessage for which there was '
