@@ -1,10 +1,13 @@
 import collections
 import weakref
 
+from sortedcontainers import SortedDict
+
 
 class NodeDataManager(collections.Mapping):
 
     FLAG_VALUES = {None, -1}
+    MAX_ADDRESS = 1 << 11
 
     class NodeData:
 
@@ -55,8 +58,8 @@ class NodeDataManager(collections.Mapping):
             )
 
     def __init__(self):
-        self.__static_to_node = {}
-        self.__logic_to_node = {}
+        self.__static_to_node = SortedDict()
+        self.__logic_to_node = SortedDict()
 
     def __len__(self):
         return len(self.__static_to_node)
@@ -109,5 +112,20 @@ class NodeDataManager(collections.Mapping):
             raise ValueError('A node with the same static address already '
                              'exists.')
 
-    def create(self, static_address, logic_address=None):
+    def create(self, static_address=None, logic_address=None):
         return self.NodeData(self, static_address, logic_address)
+
+    @classmethod
+    def __get_free_address(cls, mydict: SortedDict):
+        free_index = mydict.bisect_right(1)
+
+        if free_index > cls.MAX_ADDRESS:
+            raise ValueError('Maximum address limit reached.')
+
+        return free_index
+
+    def get_free_static_address(self):
+        return self.__get_free_address(self.__static_to_node)
+
+    def get_free_logic_address(self):
+        return self.__get_free_address(self.__logic_to_node)
