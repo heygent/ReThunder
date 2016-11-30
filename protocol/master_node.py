@@ -41,8 +41,6 @@ class MasterNode(ReThunderNode):
     def __repr__(self):
         return '<MasterNode>'
 
-    def __switch_logic_addresses(self, log_addr_a, log_addr_b):
-        raise NotImplementedError
     def init_from_static_addr_graph(self, addr_graph, initial_noise_value=0.5):
 
         if not 0 <= initial_noise_value <= 3:
