@@ -263,7 +263,11 @@ class MasterNode(ReThunderNode):
 
     @run_process
     def __on_received_response(self, response_msg: ResponsePacket):
+
         self.__update_node_graph(response_msg)
+        self.__update_sptree()
+        self.__readdress_nodes()
+
         self.application.message_received(response_msg.payload,
                                           response_msg.payload_length)
 
@@ -281,5 +285,3 @@ class MasterNode(ReThunderNode):
             for dest_node, noise_level in noise_table.items():
 
                 node_graph[source_node][dest_node]['noise'] = noise_level
-
-        self.__update_sptree()
