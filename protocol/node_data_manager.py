@@ -71,7 +71,7 @@ class NodeDataManager(collections.Mapping):
     def __iter__(self):
         return iter(self.__static_to_node)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> NodeData:
         return self.__static_to_node[item]
 
     def __delitem__(self, key):
@@ -82,10 +82,10 @@ class NodeDataManager(collections.Mapping):
         if node.logic_address not in self.FLAG_VALUES:
             del self.__logic_to_node[node.logic_address]
 
-    def from_logic_address(self, addr):
+    def from_logic_address(self, addr: int) -> NodeData:
         return self.__logic_to_node[addr]
 
-    def logic_addresses_iter(self):
+    def logic_addresses_iter(self) -> typing.Iterable[int]:
         return sorted(self.__logic_to_node.keys())
 
     def _map_to_logic(self, node: NodeData, logic_address):
@@ -128,10 +128,10 @@ class NodeDataManager(collections.Mapping):
 
         return free_index
 
-    def get_free_static_address(self):
+    def get_free_static_address(self) -> int:
         return self.__get_free_address(self.__static_to_node)
 
-    def get_free_logic_address(self):
+    def get_free_logic_address(self) -> int:
         return self.__get_free_address(self.__logic_to_node)
 
-NodeDataT = typing.TypeVar('NodeData', NodeDataManager.NodeData)
+NodeDataT = NodeDataManager.NodeData
