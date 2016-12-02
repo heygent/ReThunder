@@ -193,8 +193,9 @@ class MasterNode(ReThunderNode):
 
     @run_process
     def __on_send_request(self, message, length, destination_addr):
+
         nodes = self.__node_manager
-        sptree = self.__sptree
+        node_graph = self.node_graph
 
         final_destination = nodes[destination_addr]
         shortest_path = self.__shortest_paths[final_destination]
@@ -203,25 +204,62 @@ class MasterNode(ReThunderNode):
         packet.payload = message
         packet.payload_length = length
 
-        for node, next_node in iterblocks(shortest_path, 2, 1):
+        destination_addr = final_destination.logic_address
+        address_stack = []
+        tracer_stack = []
+
+        for node, next_node in iterblocks(reversed(shortest_path), 2, 1):
 
             if next_node.current_logic_address == -1:
-                continue  # caso 3
 
-            candidates = [n for n in sptree.successors_iter(node)
+                address_stack.append(next_node.static_address)
+                address_stack.append(next_node.logic_address)
+
+                tracer_stack.append(
+                    Tracer(static_addressing=True, new_address=True)
+                )
+
+                destination_addr = next_node.logic_address
+
+                continue
+
+            candidates = [n for n in node_graph.neighbors_iter(node)
                           if n.current_logic_address <= destination_addr]
 
-            candidates.sort(key=lambda x: x.current_logic_address)
+            max_address = max(c.current_logic_address for c in candidates)
 
-            if (candidates[-1].current_logic_address ==
-                    candidates[-2].current_logic_address):
-                pass  # caso 4
+            ambiguous_choices = set(c for c in candidates
+                                    if c.current_logic_address == max_address)
 
-            elif candidates[-1] != next_node:
-                if next_node.logic_address != next_node.current_logic_address:
-                    pass  # caso 1
-                else:
-                    pass  # caso 2
+            wrong_addressing = next_node not in ambiguous_choices
+
+            if wrong_addressing:
+                ambiguous_choices = [
+                    c for c in candidates if c.current_logic_address ==
+                    next_node.current_logic_address
+                ]
+
+            ambiguous_addressing = len(ambiguous_choices) > 1
+
+            tracer = Tracer()
+
+            if ambiguous_addressing:
+                tracer.static_addressing = True
+                address_stack.append(next_node.static_address)
+
+                destination_addr = next_node.logic_address
+
+            elif wrong_addressing:
+                address_stack.append(next_node.current_logic_address)
+
+                destination_addr = next_node.logic_address
+
+            if next_node.logic_address != next_node.current_logic_address:
+                tracer.new_address = True
+                address_stack.append(next_node.logic_address)
+
+            if tracer.is_valid():
+                tracer_stack.append(tracer)
 
     @run_process
     def __on_received_response(self, response_msg: ResponsePacket):
