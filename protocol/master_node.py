@@ -260,6 +260,32 @@ class MasterNode(ReThunderNode):
 
             if tracer.is_valid():
                 tracer_stack.append(tracer)
+            else:
+                tracer_stack[-1].offset += 1
+
+        packet = RequestPacket()
+
+        if tracer_stack[-1].offset == 0:
+            tracer = tracer_stack.pop()
+        else:
+            tracer_stack[-1].offset -= 1
+            tracer = Tracer()
+
+        packet.source_static = self.static_address
+        packet.source_logic = self.logic_address
+
+        if tracer.new_address:
+            packet.code_has_new_logic_addr = True
+            packet.new_logic_addr = address_stack.pop()
+
+        packet.code_is_addressing_static = tracer.static_addressing
+        packet.destination = address_stack.pop()
+
+        packet.payload = message
+        packet.payload_length = length
+
+        packet.path = address_stack
+        packet.tracers_list = tracer_stack
 
     @run_process
     def __on_received_response(self, response_msg: ResponsePacket):
