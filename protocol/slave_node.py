@@ -4,7 +4,6 @@ from copy import copy
 
 from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
-import protocol.tracer as tracer
 from protocol.application import Application, DefaultApplication
 from utils.run_process_decorator import run_process
 
@@ -104,11 +103,15 @@ class SlaveNode(ReThunderNode):
         self.__response_waiting_address = packet.source_static
 
         if not self.__i_am_destination(packet):
-            packet.next_hop = max(
-                (dyn_address for dyn_address in self.routing_table.keys()
-                 if dyn_address < packet.destination),
+            routing_table = self.last_sent_routing_table
+
+            next_logic_hop = max(
+                (addr for addr in routing_table.keys()
+                 if addr < packet.destination),
                 self.logic_address
             )
+
+            packet.next_hop = routing_table[next_logic_hop]
 
             return packet
 
@@ -116,13 +119,11 @@ class SlaveNode(ReThunderNode):
 
             if packet.tracers_list[-1].offset == 0:
 
-                code = packet.tracers_list.pop().code
+                tracer = packet.tracers_list.pop()
 
-                packet.code_is_addressing_static = bool(
-                    code & tracer.STATIC_ADDRESSING
-                )
+                packet.code_is_addressing_static = tracer.static_addressing
 
-                if code & tracer.NEW_ADDRESS:
+                if tracer.new_address:
                     packet.new_logic_addr = packet.path.pop()
 
             else:

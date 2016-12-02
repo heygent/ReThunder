@@ -9,7 +9,7 @@ from protocol.packet import Packet, PacketCodes, ResponsePacket, RequestPacket
 from protocol.application import Application
 from protocol.rethunder_node import ReThunderNode
 from protocol.node_data_manager import NodeDataManager, NodeDataT
-import protocol.tracer as tracer
+from protocol.tracer import Tracer
 from utils.condition_var import BroadcastConditionVar
 from utils.iterblocks import iterblocks
 from utils.run_process_decorator import run_process
