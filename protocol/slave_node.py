@@ -18,7 +18,7 @@ class SlaveNode(ReThunderNode):
         super().__init__(env, transmission_speed,
                          static_address, dynamic_address)
 
-        self.last_sent_noise_table = None
+        self.last_sent_routing_table = {}
         self.__new_dynamic_address = None
         self.__response_waiting_address = None
 
@@ -147,6 +147,7 @@ class SlaveNode(ReThunderNode):
         response.next_hop = packet.source_static
 
         response.noise_tables.append(self.noise_table)
+        self.last_sent_routing_table = self.routing_table
 
         response.payload, response.payload_length = \
             self.application.message_received(
