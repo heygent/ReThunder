@@ -3,7 +3,7 @@ from typing import List
 import simpy
 
 from infrastructure.message import TransmittedMessage, CollisionSentinel
-from infrastructure.network_interface import NetworkNode
+from infrastructure.network_node import NetworkNode
 from utils.condition_var import BroadcastConditionVar
 from utils.run_process_decorator import run_process
 from utils.updatable_process import UpdatableProcess

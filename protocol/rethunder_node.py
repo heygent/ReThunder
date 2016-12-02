@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 
 from infrastructure.message import CollisionSentinel
-from infrastructure.network_interface import NetworkNode
+from infrastructure.network_node import NetworkNode
 from protocol.packet import Packet, PacketWithSource
 from utils.run_process_decorator import run_process
 

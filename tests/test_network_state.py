@@ -4,7 +4,7 @@ import simpy
 
 from infrastructure.message import TransmittedMessage, make_transmission_delay, \
     CollisionSentinel
-from infrastructure.network_interface import NetworkState
+from infrastructure.network_node import NetworkState
 
 
 def receiver_proc(env: simpy.Environment, netstate: NetworkState,

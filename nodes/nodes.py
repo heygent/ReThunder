@@ -3,7 +3,7 @@ from typing import Any, List, Tuple, Iterable
 
 import simpy
 
-from infrastructure.network_interface import NetworkNode
+from infrastructure.network_node import NetworkNode
 from utils.run_process_decorator import run_process
 
 
