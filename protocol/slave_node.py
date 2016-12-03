@@ -5,6 +5,7 @@ from copy import copy
 from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
 from protocol.application import Application, DefaultApplication
+from protocol.tracer import Tracer
 from utils.run_process_decorator import run_process
 
 logger = logging.getLogger(__name__)
@@ -118,16 +119,15 @@ class SlaveNode(ReThunderNode):
         if not packet.code_destination_is_endpoint:
 
             if packet.tracers_list[-1].offset == 0:
-
                 tracer = packet.tracers_list.pop()
-
-                packet.code_is_addressing_static = tracer.static_addressing
-
-                if tracer.new_address:
-                    packet.new_logic_addr = packet.path.pop()
-
             else:
                 packet.tracers_list[-1].offset -= 1
+                tracer = Tracer()
+
+            packet.code_is_addressing_static = tracer.static_addressing
+
+            if tracer.new_address:
+                packet.new_logic_addr = packet.path.pop()
 
             packet.destination = packet.path.pop()
 
