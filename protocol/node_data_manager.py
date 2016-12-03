@@ -86,7 +86,7 @@ class NodeDataManager(collections.Mapping):
         return self.__logic_to_node[addr]
 
     def logic_addresses_iter(self) -> typing.Iterable[int]:
-        return sorted(self.__logic_to_node.keys())
+        return iter(self.__logic_to_node.keys())
 
     def _map_to_logic(self, node: NodeData, logic_address):
 
