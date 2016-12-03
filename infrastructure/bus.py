@@ -10,10 +10,27 @@ from utils.updatable_process import UpdatableProcess
 
 
 class BusState(UpdatableProcess):
+    """
+    Rappresenta lo stato di un Bus.
+
+    Un Bus puo' essere libero o occupato. Quando un bus libero riceve un
+    messaggio, va in stato occupato. Se un Bus riceve un messaggio mentre si
+    trova in stato di occupato, il messaggio all'interno del bus riceve una
+    trasformazione corrispondente alla collusione tra i due messaggi,
+    ovvero il messaggio viene sostituito con un riferimento all'oggetto
+    sentinella CollidedMessage.
+    """
 
     occupy = UpdatableProcess.update
 
     def __init__(self, env: simpy.Environment, propagation_delay):
+        """
+        Inizializzatore per BusState. I BusState dovrebbero essere
+        inizializzati unicamente dagli oggetti Bus.
+
+        :param env: L'ambiente della simulazione.
+        :param propagation_delay: Il ritardo di propagazione.
+        """
 
         super().__init__(env)
 
