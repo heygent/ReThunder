@@ -22,7 +22,6 @@ class SlaveNode(ReThunderNode):
                          static_address, dynamic_address)
 
         self.last_sent_routing_table = {}
-        self.__new_dynamic_address = None
         self.__response_waiting_address = None
 
         self.run_until = lambda: False
@@ -30,15 +29,6 @@ class SlaveNode(ReThunderNode):
 
     def __repr__(self):
         return '<SlaveNode static_address={}>'.format(self.static_address)
-
-    def __set_new_dynamic_address(self, address):
-        self.__new_dynamic_address = address
-
-    def __update_dynamic_address(self):
-
-        self.logic_address = (self.__new_dynamic_address or
-                              self.logic_address)
-        self.__new_dynamic_address = None
 
     def __reset_response_wait(self):
         self.__response_waiting_address = None
@@ -93,7 +83,7 @@ class SlaveNode(ReThunderNode):
         packet.source_logic = self.logic_address
 
         if packet.code_has_new_logic_addr:
-            self.__set_new_dynamic_address(packet.new_logic_addr)
+            self.logic_address = packet.new_logic_addr
 
         if self.__response_waiting_address is not None:
             logger.error(
