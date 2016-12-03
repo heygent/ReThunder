@@ -3,7 +3,10 @@ import logging
 from copy import copy
 from typing import Optional
 
-from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
+from protocol.packet import (
+    Packet, RequestPacket, ResponsePacket, HelloRequestPacket,
+    HelloResponsePacket
+)
 from protocol.rethunder_node import ReThunderNode
 from protocol.application import Application, DefaultApplication
 from protocol.tracer import Tracer
@@ -41,31 +44,26 @@ class SlaveNode(ReThunderNode):
             received = yield self._receive_packet_proc()  # type: Packet
             response = None
 
-            if received.code == PacketCodes.hello:
-                logger.error('{} received an hello message, '
-                             'which cannot be handled'.format(self))
-
-            elif getattr(received, 'next_hop', None) != self.static_address:
+            if getattr(received, 'next_hop', None) != self.static_address:
                 pass
 
-            elif received.response:
+            elif isinstance(received, ResponsePacket):
+                response = self.__response_packet_received(received)
 
-                if isinstance(received, ResponsePacket):
-                    response = self.__response_packet_received(received)
-                else:
-                    logger.error(
-                        '{} received a malformed packet. Ignoring'.format(self),
-                        extra={'packet': copy(received)}
-                    )
+            elif isinstance(received, RequestPacket):
+                response = self.__request_packet_received(received)
+
+            elif isinstance(received, (HelloRequestPacket,
+                                       HelloResponsePacket)):
+                logger.warning(
+                    '{} received a hello message, which cannot be handled.'
+                    .format(self)
+                )
             else:
-
-                if isinstance(received, RequestPacket):
-                    response = self.__request_packet_received(received)
-                else:
-                    logger.error(
-                        '{} received a malformed packet. Ignoring'.format(self),
-                        extra={'packet': copy(received)}
-                    )
+                logger.error(
+                    '{} received something unsupported.'.format(self),
+                    extra={'received': received}
+                )
 
             if response is not None:
                 yield self._send_to_network_proc(response,
