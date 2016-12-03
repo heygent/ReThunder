@@ -43,8 +43,8 @@ class MasterNode(ReThunderNode):
 
     def init_from_static_addr_graph(self, addr_graph, initial_noise_value=0.5):
 
-        if not 0 <= initial_noise_value <= 3:
-            raise ValueError('initial_noise_value must be between 0 and 3')
+        if not 0 <= initial_noise_value <= 2:
+            raise ValueError('initial_noise_value must be between 0 and 2')
 
         nodes = self.__node_manager
 
@@ -55,8 +55,11 @@ class MasterNode(ReThunderNode):
         # noinspection PyTypeChecker
         node_graph = nx.relabel_nodes(addr_graph, nodes.create, copy=True)
 
-        for n1, n2 in node_graph.edges_iter():
-            node_graph[n1][n2]['noise'] = initial_noise_value
+        # Same here. Normally set_edge_attributes takes a dict as its last
+        # argument, but other types are supported (see networkx doc).
+
+        # noinspection PyTypeChecker
+        nx.set_edge_attributes(node_graph, 'noise', initial_noise_value)
 
         self.node_graph = node_graph
         self.__update_sptree()
