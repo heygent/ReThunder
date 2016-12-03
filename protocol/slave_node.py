@@ -1,6 +1,7 @@
 import simpy
 import logging
 from copy import copy
+from typing import Optional
 
 from protocol.packet import Packet, PacketCodes, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
@@ -14,7 +15,8 @@ logger = logging.getLogger(__name__)
 class SlaveNode(ReThunderNode):
 
     def __init__(self, env: simpy.Environment, transmission_speed,
-                 static_address, dynamic_address):
+                 static_address: int, dynamic_address: Optional[int],
+                 application: Application=None):
 
         super().__init__(env, transmission_speed,
                          static_address, dynamic_address)
@@ -24,7 +26,7 @@ class SlaveNode(ReThunderNode):
         self.__response_waiting_address = None
 
         self.run_until = lambda: False
-        self.application = DefaultApplication()  # type: Application
+        self.application = application or DefaultApplication()
 
     def __repr__(self):
         return '<SlaveNode static_address={}>'.format(self.static_address)
