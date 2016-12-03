@@ -86,4 +86,3 @@ class UpdatableProcess(metaclass=abc.ABCMeta):
 
         else:
             self._update_ev.succeed([value])
-
