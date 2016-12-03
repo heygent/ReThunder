@@ -5,7 +5,9 @@ from typing import List, Dict
 import networkx as nx
 import simpy
 
-from protocol.packet import Packet, PacketCodes, ResponsePacket, RequestPacket
+from protocol.packet import (
+    ResponsePacket, RequestPacket, HelloRequestPacket, HelloResponsePacket
+)
 from protocol.application import Application
 from protocol.rethunder_node import ReThunderNode
 from protocol.node_data_manager import NodeDataManager, NodeDataT
@@ -101,55 +103,59 @@ class MasterNode(ReThunderNode):
 
                 if father.logic_address > node.logic_address:
                     node.swap_logic_address(father)
+                    node = father
                 else:
                     break
 
+            father, = sptree.predecessors(node)
             if father == previous_node:
                 continue
 
-            try:
-                greatest_son = max(sptree.successors_iter(previous_node),
-                                   key=lambda x: x.logic_address)
+            greatest_son = max(sptree.successors_iter(previous_node),
+                               key=lambda x: x.logic_address, default=None)
+
+            if greatest_son is not None:
                 node.swap_logic_address(greatest_son)
                 continue
-
-            except ValueError:
-                pass
 
             try:
                 ancestor_of_previous, = sptree.predecessors(previous_node)
             except IndexError:
                 continue
 
-            while ancestor_of_previous != 0 and father != ancestor_of_previous:
+            while (ancestor_of_previous != nodes[0] and
+                   father != ancestor_of_previous):
 
                 greatest_son = max(sptree.successors_iter(ancestor_of_previous),
                                    key=lambda x: x.logic_address)
 
                 if greatest_son.logic_address > node.logic_address:
                     node.swap_logic_address(greatest_son)
+                    node = greatest_son
                     continue
 
                 ancestor_of_previous, = sptree.predecessors(previous_node)
 
-    def send_message(self, destination_static_addr: int,
-                     message, message_length):
+    def send_message(self, message, message_length,
+                     destination_static_addr: int):
 
         if self.__current_message is not None:
             raise BusyError("{} is waiting for another message "
                             "response.".format(self))
 
-        self.__send_cond.broadcast((destination_static_addr, message,
-                                    message_length))
+        self.__send_cond.broadcast((message, message_length,
+                                    destination_static_addr))
 
     @run_process
     def run(self):
+
         if self.__sptree is None:
             raise ValueError("{} must be initialized before it's started.")
 
         env = self.env
 
         while True:
+
             send_ev = self.__send_cond.wait()      # type: simpy.Event
             recv_ev = self._receive_packet_proc()  # type: simpy.Event
 
@@ -164,38 +170,43 @@ class MasterNode(ReThunderNode):
             assert any(e.processed for e in events), "Spurious wake"
 
             if send_ev.processed:
+
                 assert self.__current_message is None, (
                     "{} has not been prevented to send a message while "
                     "waiting for a response, so it is in an invalid state."
                     .format(self))
-                yield self.__on_send_request(send_ev.value)
+
+                packet = self.__make_request_packet(*send_ev.value)
+                self._send_to_network_proc(packet, packet.number_of_frames())
 
             if recv_ev.processed:
-                yield self.__on_reception(recv_ev.value)
 
-    # noinspection PyTypeChecker
-    @run_process
-    def __on_reception(self, packet):
+                packet = recv_ev.value
 
-        if not isinstance(packet, Packet):
-            logger.error(
-                '{} received something different than a Packet.'.format(self),
-                extra={'received': packet}
-            )
-            return
+                if isinstance(packet, RequestPacket):
+                    pass
 
-        if packet.response:
-            yield self.__on_received_response(packet)
-        elif packet.code == PacketCodes.hello.value:
-            logger.warning(
-                '{} received a hello message, which cannot be handled.'
-                .format(self)
-            )
-        else:
-            return
+                elif isinstance(packet, ResponsePacket):
 
-    @run_process
-    def __on_send_request(self, message, length, destination_addr):
+                    self.__update_node_graph(packet)
+                    self.__update_sptree()
+                    self.__readdress_nodes()
+
+                    self.application.message_received(packet.payload,
+                                                      packet.payload_length)
+                elif isinstance(packet,
+                                (HelloRequestPacket, HelloResponsePacket)):
+                    logger.warning(
+                        '{} received a hello message, which cannot be handled.'
+                        .format(self)
+                    )
+                else:
+                    logger.error(
+                        '{} received something unsupported.'
+                        .format(self), extra={'received': packet}
+                    )
+
+    def __make_request_packet(self, message, length, destination_addr):
 
         nodes = self.__node_manager
         node_graph = self.node_graph
@@ -290,15 +301,7 @@ class MasterNode(ReThunderNode):
         packet.path = address_stack
         packet.tracers_list = tracer_stack
 
-    @run_process
-    def __on_received_response(self, response_msg: ResponsePacket):
-
-        self.__update_node_graph(response_msg)
-        self.__update_sptree()
-        self.__readdress_nodes()
-
-        self.application.message_received(response_msg.payload,
-                                          response_msg.payload_length)
+        return packet
 
     def __update_node_graph(self, packet: ResponsePacket):
 
