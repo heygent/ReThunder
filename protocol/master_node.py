@@ -219,10 +219,15 @@ class MasterNode(ReThunderNode):
         packet.payload_length = length
 
         destination_addr = final_destination.logic_address
-        address_stack = []
-        tracer_stack = []
+        address_stack = []           # type: List[int]
+        tracer_stack = []            # type: List[Tracer]
 
-        for node, next_node in iterblocks(reversed(shortest_path), 2, 1):
+        next_static_addressing_used = True
+
+        for next_node, node in iterblocks(reversed(shortest_path), 2, 1):
+
+            static_addressing_used = next_static_addressing_used
+            next_static_addressing_used = False
 
             if next_node.current_logic_address == -1:
 
@@ -234,26 +239,23 @@ class MasterNode(ReThunderNode):
                 )
 
                 destination_addr = next_node.logic_address
+                next_static_addressing_used = True
 
                 continue
 
-            candidates = [n for n in node_graph.neighbors_iter(node)
-                          if n.current_logic_address <= destination_addr]
+            neighbors = node_graph.neighbors(node)
 
-            max_address = max(c.current_logic_address for c in candidates)
+            max_address = max(c.current_logic_address for c in neighbors
+                              if c.current_logic_address <= destination_addr)
 
-            ambiguous_choices = set(c for c in candidates
-                                    if c.current_logic_address == max_address)
+            wrong_addressing = max_address != next_node.current_logic_address
 
-            wrong_addressing = next_node not in ambiguous_choices
+            candidates = [
+                c for c in neighbors
+                if c.current_logic_address == next_node.current_logic_address
+            ]
 
-            if wrong_addressing:
-                ambiguous_choices = [
-                    c for c in candidates if c.current_logic_address ==
-                    next_node.current_logic_address
-                ]
-
-            ambiguous_addressing = len(ambiguous_choices) > 1
+            ambiguous_addressing = len(candidates) > 1
 
             tracer = Tracer()
 
@@ -261,12 +263,20 @@ class MasterNode(ReThunderNode):
                 tracer.static_addressing = True
                 address_stack.append(next_node.static_address)
 
-                destination_addr = next_node.logic_address
+                destination_addr = next_node.current_logic_address
+                next_static_addressing_used = True
 
             elif wrong_addressing:
                 address_stack.append(next_node.current_logic_address)
 
-                destination_addr = next_node.logic_address
+                destination_addr = next_node.current_logic_address
+                next_static_addressing_used = True
+
+            else:
+                if static_addressing_used:
+                    address_stack.append(next_node.current_logic_address)
+
+                    destination_addr = next_node.current_logic_address
 
             if next_node.logic_address != next_node.current_logic_address:
                 tracer.new_address = True
