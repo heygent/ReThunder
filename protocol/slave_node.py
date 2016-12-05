@@ -44,7 +44,14 @@ class SlaveNode(ReThunderNode):
             received = yield self._receive_packet_proc()  # type: Packet
             response = None
 
-            if getattr(received, 'next_hop', None) != self.static_address:
+            if isinstance(received, (HelloRequestPacket,
+                                     HelloResponsePacket)):
+                logger.warning(
+                    '{} received a hello message, which cannot be handled.'
+                    .format(self)
+                )
+
+            elif getattr(received, 'next_hop', None) != self.static_address:
                 pass
 
             elif isinstance(received, ResponsePacket):
@@ -53,12 +60,6 @@ class SlaveNode(ReThunderNode):
             elif isinstance(received, RequestPacket):
                 response = self.__request_packet_received(received)
 
-            elif isinstance(received, (HelloRequestPacket,
-                                       HelloResponsePacket)):
-                logger.warning(
-                    '{} received a hello message, which cannot be handled.'
-                    .format(self)
-                )
             else:
                 logger.error(
                     '{} received something unsupported.'.format(self),
