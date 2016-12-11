@@ -32,12 +32,12 @@ class MasterNode(ReThunderNode):
 
         self.node_graph = nx.Graph()    # type: nx.Graph
         self.application = application  # type: Application
-        self.__sptree = None            # type: nx.DiGraph
-        self.__shortest_paths = None    # type: Dict[NodeDataT, List[NodeDataT]]
-        self.__send_cond = BroadcastConditionVar(self.env)
-        self.__current_message = None
-        self.__current_message_path = None
-        self.__node_manager = NodeDataManager()
+        self._sptree = None            # type: nx.DiGraph
+        self._shortest_paths = None    # type: Dict[NodeDataT, List[NodeDataT]]
+        self._send_cond = BroadcastConditionVar(self.env)
+        self._current_message = None
+        self._current_message_path = None
+        self._node_manager = NodeDataManager()
 
     def __repr__(self):
         return '<MasterNode>'
@@ -47,7 +47,7 @@ class MasterNode(ReThunderNode):
         if not 0 <= initial_noise_value <= 2:
             raise ValueError('initial_noise_value must be between 0 and 2')
 
-        nodes = self.__node_manager
+        nodes = self._node_manager
 
         # nx.relabel_nodes accepts a function for relabeling nodes.
         # It is poorly documented though, to the point that the type checker
@@ -63,27 +63,27 @@ class MasterNode(ReThunderNode):
         nx.set_edge_attributes(node_graph, 'noise', initial_noise_value)
 
         self.node_graph = node_graph
-        self.__update_sptree()
+        self._update_sptree()
 
         addr_iter = itertools.count()
 
         def assign_logic_address(n: NodeDataT):
             n.logic_address = next(addr_iter)
 
-        preorder_tree_dfs(self.__sptree, nodes[0], action=assign_logic_address)
+        preorder_tree_dfs(self._sptree, nodes[0], action=assign_logic_address)
 
-    def __update_sptree(self):
-        nodes = self.__node_manager
+    def _update_sptree(self):
+        nodes = self._node_manager
 
         shortest_paths = nx.shortest_path(self.node_graph, nodes[0], 'noise')
-        self.__sptree = shortest_paths_tree(shortest_paths)
-        self.__shortest_paths = shortest_paths
+        self._sptree = shortest_paths_tree(shortest_paths)
+        self._shortest_paths = shortest_paths
 
-    def __readdress_nodes(self):
+    def _readdress_nodes(self):
 
-        nodes = self.__node_manager
+        nodes = self._node_manager
 
-        sptree = self.__sptree  # type: nx.DiGraph
+        sptree = self._sptree  # type: nx.DiGraph
         assert nx.is_tree(sptree)
 
         next_previous_node = nodes[0]
@@ -138,24 +138,24 @@ class MasterNode(ReThunderNode):
     def send_message(self, message, message_length,
                      destination_static_addr: int):
 
-        if self.__current_message is not None:
+        if self._current_message is not None:
             raise BusyError("{} is waiting for another message "
                             "response.".format(self))
 
-        self.__send_cond.broadcast((message, message_length,
-                                    destination_static_addr))
+        self._send_cond.broadcast((message, message_length,
+                                   destination_static_addr))
 
     @run_process
     def run(self):
 
-        if self.__sptree is None:
+        if self._sptree is None:
             raise ValueError("{} must be initialized before it's started.")
 
         env = self.env
 
         while True:
 
-            send_ev = self.__send_cond.wait()      # type: simpy.Event
+            send_ev = self._send_cond.wait()      # type: simpy.Event
             recv_ev = self._receive_packet_proc()  # type: simpy.Event
 
             events = (send_ev, recv_ev)
@@ -170,12 +170,12 @@ class MasterNode(ReThunderNode):
 
             if send_ev.processed:
 
-                assert self.__current_message is None, (
+                assert self._current_message is None, (
                     "{} has not been prevented to send a message while "
                     "waiting for a response, so it is in an invalid state."
                     .format(self))
 
-                packet = self.__make_request_packet(*send_ev.value)
+                packet = self._make_request_packet(*send_ev.value)
                 self._send_to_network_proc(packet, packet.number_of_frames())
 
             if recv_ev.processed:
@@ -187,9 +187,9 @@ class MasterNode(ReThunderNode):
 
                 elif isinstance(packet, ResponsePacket):
 
-                    self.__update_node_graph(packet)
-                    self.__update_sptree()
-                    self.__readdress_nodes()
+                    self._update_node_graph(packet)
+                    self._update_sptree()
+                    self._readdress_nodes()
 
                     self.application.message_received(packet.payload,
                                                       packet.payload_length)
@@ -205,13 +205,13 @@ class MasterNode(ReThunderNode):
                         .format(self), extra={'received': packet}
                     )
 
-    def __make_request_packet(self, message, length, destination_addr):
+    def _make_request_packet(self, message, length, destination_addr):
 
-        nodes = self.__node_manager
+        nodes = self._node_manager
         node_graph = self.node_graph
 
         final_destination = nodes[destination_addr]
-        shortest_path = self.__shortest_paths[final_destination]
+        shortest_path = self._shortest_paths[final_destination]
 
         packet = RequestPacket()
         packet.payload = message
@@ -312,10 +312,10 @@ class MasterNode(ReThunderNode):
 
         return packet
 
-    def __update_node_graph(self, packet: ResponsePacket):
+    def _update_node_graph(self, packet: ResponsePacket):
 
         node_graph = self.node_graph
-        message_path = self.__current_message_path
+        message_path = self._current_message_path
 
         for node in message_path:
             node.current_logic_address = node.logic_address
