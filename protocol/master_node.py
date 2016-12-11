@@ -28,8 +28,7 @@ class MasterNode(ReThunderNode):
 
     def __init__(self, env, transmission_speed, application):
 
-        super().__init__(env, transmission_speed,
-                         static_address=0, dynamic_address=0)
+        super().__init__(env, transmission_speed, 0, 0)
 
         self.node_graph = nx.Graph()    # type: nx.Graph
         self.application = application  # type: Application
