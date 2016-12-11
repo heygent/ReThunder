@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 class ReThunderNode(NetworkNode):
 
     def __init__(self, env, transmission_speed, static_address,
-                 dynamic_address):
+                 logic_address):
 
         super().__init__(env, transmission_speed)
         self.static_address = static_address
-        self.logic_address = dynamic_address
+        self.logic_address = logic_address
         self.noise_table = defaultdict(lambda: 0)
         self.routing_table = {}
 
