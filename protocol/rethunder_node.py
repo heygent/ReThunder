@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from typing import Optional
 
 from infrastructure.message import CollisionSentinel
 from infrastructure.network_node import NetworkNode
@@ -11,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 class ReThunderNode(NetworkNode):
 
-    def __init__(self, env, transmission_speed, static_address,
-                 logic_address):
+    def __init__(self, env, transmission_speed, static_address: int,
+                 logic_address: Optional[int]):
 
         super().__init__(env, transmission_speed)
         self.static_address = static_address
