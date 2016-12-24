@@ -42,7 +42,8 @@ class MasterNode(ReThunderNode):
     def __repr__(self):
         return '<MasterNode>'
 
-    def init_from_static_addr_graph(self, addr_graph, initial_noise_value=0.5):
+    def init_from_static_addr_graph(self, addr_graph, initial_noise_value=0.5,
+                                    assign_logic_addr=True):
 
         if not 0 <= initial_noise_value <= 2:
             raise ValueError('initial_noise_value must be between 0 and 2')
@@ -64,6 +65,9 @@ class MasterNode(ReThunderNode):
 
         self.node_graph = node_graph
         self._update_sptree()
+
+        if not assign_logic_addr:
+            return
 
         addr_iter = itertools.count()
 
