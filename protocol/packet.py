@@ -1,39 +1,28 @@
 import abc
-import enum
 import inspect
 from collections import defaultdict
-from itertools import dropwhile
 from typing import List, Dict, Optional
 
-from protocol.packet_fields import FlagField, DataField, FixedSizeInt
+from protocol.packet_fields import FixedSizeInt
 from protocol.tracer import Tracer
 
+FRAME_SIZE = 11
 PHYSICAL_ADDRESS_FRAMES = 2
-
-
-class PacketCodes(enum.Enum):
-    hello = 0b1111
-    hello_response = 0b0011
-    discovery = 0b0000
 
 
 class Packet(metaclass=abc.ABCMeta):
 
     __STATIC_FRAMES = 1
 
-    heading     = FixedSizeInt(11)
-    version     = DataField('heading', 9, 2)
-    ack         = FlagField('heading', 8)
-    response    = FlagField('heading', 7)
-    code        = DataField('heading', 3, 4)
-    token       = DataField('heading', 0, 3)
-
-    code_is_node_init            = FlagField('code', 3)
-    code_destination_is_endpoint = FlagField('code', 2)
-    code_is_addressing_static    = FlagField('code', 1)
-    code_has_new_logic_addr      = FlagField('code', 0)
+    version = FixedSizeInt(2)
+    token = FixedSizeInt(3)
 
     def __init__(self):
+
+        self.code_is_node_init = False
+        self.code_destination_is_endpoint = False
+        self.code_is_addressing_static = False
+
         self.__frame_errors = defaultdict(int)
         self.__frame_errors_view = self.__frame_errors.items()
 
@@ -48,15 +37,14 @@ class Packet(metaclass=abc.ABCMeta):
         # noinspection PyProtectedMember
         return sum(
             cls._frame_increment(self)
-            for cls in dropwhile(lambda c: not issubclass(c, Packet),
-                                 reversed(inspect.getmro(type(self))))
+            for cls in inspect.getmro(type(self)) if issubclass(cls, Packet)
         )
 
     @abc.abstractmethod
     def _frame_increment(self):
         return self.__STATIC_FRAMES
 
-    def damage_bit(self, frame_index):
+    def damage_bit(self, frame_index=None):
 
         if not 0 <= frame_index < self.number_of_frames():
             raise IndexError('Frame index out of range')
@@ -79,7 +67,7 @@ class Packet(metaclass=abc.ABCMeta):
 
 class PacketWithPhysicalAddress(Packet):
 
-    physical_address = FixedSizeInt(11 * PHYSICAL_ADDRESS_FRAMES)
+    physical_address = FixedSizeInt(FRAME_SIZE * PHYSICAL_ADDRESS_FRAMES)
 
     @abc.abstractmethod
     def _frame_increment(self):
@@ -88,8 +76,8 @@ class PacketWithPhysicalAddress(Packet):
 
 class PacketWithSource(Packet):
 
-    source_static    = FixedSizeInt(11)
-    source_logic     = FixedSizeInt(11)
+    source_static = FixedSizeInt(FRAME_SIZE)
+    source_logic = FixedSizeInt(FRAME_SIZE)
 
     @abc.abstractmethod
     def _frame_increment(self):
@@ -100,7 +88,9 @@ class HelloRequestPacket(PacketWithPhysicalAddress):
 
     def __init__(self):
         super().__init__()
-        self.code = PacketCodes.hello
+
+    def __repr__(self):
+        return '<HelloRequestPacket addr={}>'.format(self.physical_address)
 
     def _frame_increment(self):
         return 0
@@ -110,10 +100,12 @@ class HelloResponsePacket(PacketWithPhysicalAddress, PacketWithSource):
 
     def __init__(self):
         super().__init__()
-        self.code = PacketCodes.hello_response
 
-    new_static_address = FixedSizeInt(11)
-    new_logic_address = FixedSizeInt(11)
+    new_static_address = FixedSizeInt(FRAME_SIZE)
+    new_logic_address = FixedSizeInt(FRAME_SIZE)
+
+    def __repr__(self):
+        return '<HelloResponsePacket addr={}>'.format(self.physical_address)
 
     def _frame_increment(self):
         return 2
@@ -123,8 +115,8 @@ class CommunicationPacket(PacketWithSource):
 
     __STATIC_FRAMES = 2
 
-    next_hop        = FixedSizeInt(11)
-    payload_length  = FixedSizeInt(11)
+    next_hop        = FixedSizeInt(FRAME_SIZE)
+    payload_length  = FixedSizeInt(FRAME_SIZE)
 
     def __init__(self):
         super().__init__()
@@ -148,8 +140,8 @@ class RequestPacket(CommunicationPacket):
     __STATIC_FRAMES = 3
 
     new_static_addr = CommunicationPacket.payload_length
-    destination     = FixedSizeInt(11)
-    new_logic_addr  = FixedSizeInt(11, None, True)
+    destination     = FixedSizeInt(FRAME_SIZE)
+    new_logic_addr  = FixedSizeInt(FRAME_SIZE, init_value=None, optional=True)
 
     def __init__(self):
 
@@ -194,11 +186,8 @@ class ResponsePacket(CommunicationPacket):
 
         frames = self.__STATIC_FRAMES
 
-        collections = ((self.noise_tables, 1),
-                       *((table, 2) for table in self.noise_tables),
-                       (self.new_node_list, PHYSICAL_ADDRESS_FRAMES + 1))
-
-        frames += sum(len(collection or ()) * weight
-                      for collection, weight in collections)
+        frames += len(self.noise_tables)
+        frames += len(self.new_node_list)
+        frames += sum(len(table) * 2 for table in self.noise_tables)
 
         return frames
