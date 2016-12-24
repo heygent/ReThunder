@@ -88,21 +88,21 @@ class NodeDataManager(collections.Mapping):
     def from_logic_address(self, addr: int) -> NodeData:
         return self.__logic_to_node[addr]
 
-    def logic_addresses_iter(self) -> typing.Iterable[int]:
-        return iter(self.__logic_to_node.keys())
+    def logic_addresses_view(self):
+        return self.__logic_to_node.keys()
 
-    def _map_to_logic(self, node: NodeData, logic_address):
+    def _map_to_logic(self, node: NodeData, new_logic_address):
 
         logic_to_node = self.__logic_to_node
 
-        old_logic_addr = logic_to_node.get(logic_address)
+        invalid = node.logic_address in self.FLAG_VALUES
+        delete = new_logic_address in self.FLAG_VALUES
 
-        if old_logic_addr is None:
-            if logic_address not in self.FLAG_VALUES:
-                logic_to_node[logic_address] = node
-        elif logic_address in self.FLAG_VALUES:
-            del logic_to_node[old_logic_addr]
-        else:
+        if not invalid and delete:
+            del logic_to_node[node.logic_address]
+        elif invalid and not delete:
+            logic_to_node[new_logic_address] = node
+        elif not invalid and not delete:
             raise ValueError('The logic address is already assigned.')
 
     def _swap_logic_mappings(self, addr1, addr2):
