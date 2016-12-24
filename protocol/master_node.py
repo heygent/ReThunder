@@ -1,5 +1,6 @@
 import logging
 import itertools
+from copy import deepcopy
 from typing import List, Dict
 
 import networkx as nx
@@ -13,6 +14,7 @@ from protocol.rethunder_node import ReThunderNode
 from protocol.node_data_manager import NodeDataManager, NodeDataT
 from protocol.tracer import Tracer
 from utils.condition_var import BroadcastConditionVar
+from utils.func import singledispatchmethod
 from utils.iterblocks import iterblocks
 from utils.run_process_decorator import run_process
 from utils.graph import shortest_paths_tree, preorder_tree_dfs
@@ -183,30 +185,37 @@ class MasterNode(ReThunderNode):
 
             if recv_ev.processed:
 
-                packet = recv_ev.value
+                self._handle_received(recv_ev.value)
 
-                if isinstance(packet, RequestPacket):
-                    pass
+    @singledispatchmethod
+    def _handle_received(self, reveived):
 
-                elif isinstance(packet, ResponsePacket):
+        logger.error(
+            '{} received something unsupported.'
+            .format(self), extra={'received': reveived}
+        )
 
-                    self._update_node_graph(packet)
-                    self._update_sptree()
-                    self._readdress_nodes()
+    @_handle_received.register(Packet)
+    def _(self, packet):
 
-                    self.application.message_received(packet.payload,
-                                                      packet.payload_length)
-                elif isinstance(packet,
-                                (HelloRequestPacket, HelloResponsePacket)):
-                    logger.warning(
-                        '{} received a hello message, which cannot be handled.'
-                        .format(self)
-                    )
-                else:
-                    logger.error(
-                        '{} received something unsupported.'
-                        .format(self), extra={'received': packet}
-                    )
+        logger.warning(
+            '{} received {}, which cannot be handled.'
+            .format(self, packet), extra={'packet': deepcopy(packet)}
+        )
+
+    @_handle_received.register(RequestPacket)
+    def _(self, packet):
+        pass
+
+    @_handle_received.register(ResponsePacket)
+    def _(self, packet):
+
+        self._update_node_graph(packet)
+        self._update_sptree()
+        self._readdress_nodes()
+
+        self.application.message_received(packet.payload,
+                                          packet.payload_length)
 
     def _make_request_packet(self, message, length, destination_addr):
 
