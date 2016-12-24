@@ -1,6 +1,6 @@
 import simpy
 import logging
-from copy import copy
+from copy import copy, deepcopy
 from typing import Optional
 
 from protocol.packet import (
@@ -87,7 +87,7 @@ class SlaveNode(ReThunderNode):
             logger.error(
                 '{} received {} while waiting for another RequestPacket. The '
                 'packet will not be forwarded'.format(self, packet),
-                extra={'request': copy(packet)}
+                extra={'request': deepcopy(packet)}
             )
             return None
 
@@ -159,7 +159,7 @@ class SlaveNode(ReThunderNode):
         response.source_logic = self.logic_address
         response.next_hop = packet.source_static
 
-        response.noise_tables.append(self.noise_table)
+        response.noise_tables.append(copy(self.noise_table))
         self.last_sent_routing_table = self.routing_table
 
         response.payload, response.payload_length = \
