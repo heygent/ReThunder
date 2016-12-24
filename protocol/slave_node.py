@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class SlaveNode(ReThunderNode):
 
     def __init__(self, env: simpy.Environment, transmission_speed,
-                 static_address: int, logic_address: Optional[int],
+                 static_address: int, logic_address: Optional[int]=None,
                  application: Application=None):
 
         super().__init__(env, transmission_speed,
