@@ -1,4 +1,7 @@
+import weakref
+
 import simpy
+import networkx as nx
 
 from infrastructure.message import TransmittedMessage, CollisionSentinel
 from utils.condition_var import BroadcastConditionVar
@@ -96,16 +99,13 @@ class BusState(UpdatableProcess):
 
 class Bus:
 
-    def __init__(self, env, propagation_delay):
+    def __init__(self, network, propagation_delay):
 
-        self.env = env
+        self.env = env = network.env
+        self.__netgraph = netgraph = weakref.proxy(network.netgraph)
         self.__bus_state = BusState(env, propagation_delay)
-        self.__node_list = []
 
-    def register_node(self, node, mutual=True):
-        self.__node_list.append(node)
-        if mutual:
-            node.register_bus(self, False)
+        netgraph.add_node(self)
 
     @property
     def on_collision(self):
@@ -121,6 +121,5 @@ class Bus:
         self.__bus_state.occupy(message)
         message = yield self.__bus_state.receive_current_transmission_ev()
 
-        for node in self.__node_list:
-
+        for node in self.__netgraph.neighbors(self):
             node.send_to_node_proc(message)
