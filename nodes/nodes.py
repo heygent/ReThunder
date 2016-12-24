@@ -3,15 +3,15 @@ from typing import Any, List, Tuple, Iterable
 
 import simpy
 
-from infrastructure.network_node import NetworkNode
+from infrastructure.node import NetworkNode
 from utils.run_process_decorator import run_process
 
 
 class ReceiverNode(NetworkNode):
 
-    def __init__(self, env: simpy.Environment, transmission_speed):
+    def __init__(self, network):
 
-        super().__init__(env, transmission_speed)
+        super().__init__(network)
 
         self.received = []  # type: List[Tuple[int, Any]]
         self.run_until = lambda: False
@@ -27,9 +27,9 @@ class ReceiverNode(NetworkNode):
 
 class SenderNode(NetworkNode):
 
-    def __init__(self, env, transmission_speed, send_queue: Iterable[Any]=()):
+    def __init__(self, network, send_queue: Iterable[Any]=()):
 
-        super().__init__(env, transmission_speed)
+        super().__init__(network)
         self.__send_queue = collections.deque(iterable=send_queue)
 
     def send_next(self, message, message_len):

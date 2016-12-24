@@ -15,12 +15,11 @@ logger = logging.getLogger(__name__)
 
 class SlaveNode(ReThunderNode):
 
-    def __init__(self, env: simpy.Environment, transmission_speed,
-                 static_address: int, logic_address: Optional[int]=None,
+    def __init__(self, network, static_address: int,
+                 logic_address: Optional[int]=None,
                  application: Application=None):
 
-        super().__init__(env, transmission_speed,
-                         static_address, logic_address)
+        super().__init__(network, static_address, logic_address)
 
         self.last_sent_routing_table = {}
         self.__response_waiting_address = None

@@ -1,10 +1,10 @@
-
 import unittest
 
 import simpy
 
 from infrastructure.bus import Bus
 from infrastructure.message import CollisionSentinel
+from infrastructure.network import Network
 from nodes.nodes import SenderNode, ReceiverNode
 
 
@@ -12,25 +12,25 @@ class TestNetwork(unittest.TestCase):
 
     def setUp(self):
         self.maxDiff = None
+        self.network = Network(transmission_speed=2)
+        self.prop_delay = 1
 
     def test_reception(self):
 
-        env = simpy.Environment()
+        network = self.network
+        prop_delay = self.prop_delay
         messages = [('Message{}'.format(i), 8) for i in range(10)]
-        trans_speed = 2
-        prop_delay = 1
 
-        sender = SenderNode(env, trans_speed, messages)
-        receiver = ReceiverNode(env, trans_speed)
-
-        bus = Bus(env, prop_delay)
+        sender = SenderNode(network)
+        receiver = ReceiverNode(network)
+        bus = Bus(network, prop_delay)
 
         for node in (sender, receiver):
-            bus.register_node(node)
+            network.netgraph.add_edge(node, bus)
 
         processes = [node.run_proc() for node in (sender, receiver)]
 
-        env.run()
+        network.env.run()
 
         self.assertEqual(receiver.received,
                          [(6 * i, msg) for i, (msg, _) in enumerate(messages,
@@ -38,23 +38,22 @@ class TestNetwork(unittest.TestCase):
 
     def test_collisions(self):
 
-        env = simpy.Environment()
+        network = self.network
         messages = [('Message{}'.format(i), 8) for i in range(10)]
-        trans_speed = 2
-        prop_delay = 1
+        prop_delay = self.prop_delay
 
-        senders = [SenderNode(env, trans_speed, messages) for _ in range(2)]
-        receiver = ReceiverNode(env, trans_speed)
-        nodes = [*senders, receiver]
+        senders = [SenderNode(network, messages) for _ in range(2)]
+        receiver = ReceiverNode(network)
+        nodes = (*senders, receiver)
 
-        bus = Bus(env, prop_delay)
+        bus = Bus(network, prop_delay)
 
         for node in nodes:
-            bus.register_node(node)
+            network.netgraph.add_edge(node, bus)
 
         processes = [node.run_proc() for node in nodes]
 
-        env.run()
+        network.env.run()
 
         self.assertEqual(receiver.received,
                          [(6 * i, CollisionSentinel)

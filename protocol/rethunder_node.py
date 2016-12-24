@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Optional
 
 from infrastructure.message import CollisionSentinel
-from infrastructure.network_node import NetworkNode
+from infrastructure.node import NetworkNode
 from protocol.packet import Packet, PacketWithSource
 from utils.run_process_decorator import run_process
 
@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 class ReThunderNode(NetworkNode):
 
-    def __init__(self, env, transmission_speed, static_address: int,
+    def __init__(self, network, static_address: int,
                  logic_address: Optional[int]):
 
-        super().__init__(env, transmission_speed)
+        super().__init__(network)
         self.static_address = static_address
         self.logic_address = logic_address
         self.noise_table = defaultdict(lambda: 0)

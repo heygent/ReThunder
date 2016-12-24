@@ -6,6 +6,7 @@ import random
 
 import simpy
 
+from infrastructure.network import Network
 from protocol.master_node import MasterNode
 from protocol.application import DefaultApplication
 
@@ -42,8 +43,8 @@ class MasterNodeTest(unittest.TestCase):
 
     def setUp(self):
 
-        self.env = env = simpy.Environment()
-        self.master = master = MasterNode(env, 5, DefaultApplication)
+        self.network = network = Network()
+        self.master = master = MasterNode(network, DefaultApplication)
 
         static_addr_graph = nx.Graph()
 

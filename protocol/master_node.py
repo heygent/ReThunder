@@ -26,9 +26,9 @@ class BusyError(Exception):
 
 class MasterNode(ReThunderNode):
 
-    def __init__(self, env, transmission_speed, application):
+    def __init__(self, network, application):
 
-        super().__init__(env, transmission_speed, 0, 0)
+        super().__init__(network, 0, 0)
 
         self.node_graph = nx.Graph()    # type: nx.Graph
         self.application = application  # type: Application
