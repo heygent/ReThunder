@@ -1,13 +1,12 @@
 import collections
 import weakref
-import typing
 
 from sortedcontainers import SortedDict
 
 
 class NodeDataManager(collections.Mapping):
 
-    FLAG_VALUES = frozenset((None, -1))
+    FLAG_VALUES = frozenset((None,))
     MAX_ADDRESS = 1 << 11
 
     class NodeData:
@@ -41,6 +40,7 @@ class NodeDataManager(collections.Mapping):
             self.__logic_address = logic_addr
 
         def swap_logic_address(self, other):
+
             self.__logic_address, other.__logic_address = (
                 other.__logic_address, self.__logic_address
             )
