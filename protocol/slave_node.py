@@ -10,6 +10,7 @@ from protocol.packet import (
 from protocol.rethunder_node import ReThunderNode
 from protocol.application import Application, DefaultApplication
 from protocol.tracer import Tracer
+from utils.func import singledispatchmethod
 from utils.run_process_decorator import run_process
 
 logger = logging.getLogger(__name__)
@@ -42,29 +43,7 @@ class SlaveNode(ReThunderNode):
         while not self.run_until():
 
             received = yield self._receive_packet_proc()  # type: Packet
-            response = None
-
-            if isinstance(received, (HelloRequestPacket,
-                                     HelloResponsePacket)):
-                logger.warning(
-                    '{} received a hello message, which cannot be handled.'
-                    .format(self)
-                )
-
-            elif getattr(received, 'next_hop', None) != self.static_address:
-                pass
-
-            elif isinstance(received, ResponsePacket):
-                response = self.__response_packet_received(received)
-
-            elif isinstance(received, RequestPacket):
-                response = self.__request_packet_received(received)
-
-            else:
-                logger.error(
-                    '{} received something unsupported.'.format(self),
-                    extra={'received': received}
-                )
+            response = self._handle_received(received)
 
             if response is not None:
                 yield self._send_to_network_proc(response,
@@ -76,7 +55,27 @@ class SlaveNode(ReThunderNode):
         else:
             return self.logic_address == packet.destination
 
-    def __request_packet_received(self, packet: RequestPacket):
+    @singledispatchmethod
+    def _handle_received(self, received):
+
+        logger.error(
+            '{} received something unsupported.'.format(self),
+            extra={'received': received}
+        )
+
+    @_handle_received.register(Packet)
+    def _(self, packet):
+
+        logger.warning(
+            '{} received {}, which cannot be handled.'
+            .format(self, packet), extra={'packet': deepcopy(packet)}
+        )
+
+    @_handle_received.register(RequestPacket)
+    def _request_packet_received(self, packet):
+
+        if packet.next_hop != self.static_address:
+            return None
 
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
@@ -126,9 +125,30 @@ class SlaveNode(ReThunderNode):
             return packet
 
         else:
-            return self.__make_response_packet(packet)
+            return self._make_response_packet(packet)
 
-    def __make_response_packet(self, packet):
+    @_handle_received.register(ResponsePacket)
+    def _response_packet_received(self, packet):
+
+        if packet.next_hop != self.static_address:
+            return None
+
+        if self.__response_waiting_address is None:
+            logger.warning('{} received a ResponseMessage for which there was '
+                           'no answering address'.format(self))
+            return None
+
+        packet.source_static = self.static_address
+        packet.source_logic = self.logic_address
+
+        packet.next_hop = self.__response_waiting_address
+        self.__response_waiting_address = None
+
+        packet.noise_tables.append(self.noise_table)
+
+        return packet
+
+    def _make_response_packet(self, packet):
 
         logger.info('{} received a payload'.format(self),
                     extra={'payload': packet.payload})
@@ -148,20 +168,3 @@ class SlaveNode(ReThunderNode):
             )
 
         return response
-
-    def __response_packet_received(self, packet: ResponsePacket):
-
-        if self.__response_waiting_address is None:
-            logger.warning('{} received a ResponseMessage for which there was '
-                           'no answering address'.format(self))
-            return None
-
-        packet.source_static = self.static_address
-        packet.source_logic = self.logic_address
-
-        packet.next_hop = self.__response_waiting_address
-        self.__response_waiting_address = None
-
-        packet.noise_tables.append(self.noise_table)
-
-        return packet
