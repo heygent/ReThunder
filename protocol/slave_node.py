@@ -3,10 +3,7 @@ import logging
 from copy import copy, deepcopy
 from typing import Optional
 
-from protocol.packet import (
-    Packet, RequestPacket, ResponsePacket, HelloRequestPacket,
-    HelloResponsePacket
-)
+from protocol.packet import Packet, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
 from protocol.application import Application, DefaultApplication
 from protocol.tracer import Tracer
