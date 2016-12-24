@@ -49,8 +49,11 @@ class NodeDataManager(collections.Mapping):
             )
 
         def __eq__(self, other):
-            return (self.static_address == other.static_address and
-                    self.__node_manager is other.__node_manager)
+
+            if not isinstance(other, NodeDataManager.NodeData):
+                return super().__eq__(other)
+
+            return self is other
 
         def __hash__(self):
             return self.static_address
