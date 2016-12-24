@@ -151,7 +151,7 @@ class MasterNode(ReThunderNode):
                                    destination_static_addr))
 
     @run_process
-    def run(self):
+    def run_proc(self):
 
         if self._sptree is None:
             raise ValueError("{} must be initialized before it's started.")
