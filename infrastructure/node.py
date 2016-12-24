@@ -1,14 +1,16 @@
-from typing import Any, List
+import weakref
+from typing import Any
 
 import simpy
+import networkx as nx
 
 from utils.condition_var import ConditionVar, BroadcastConditionVar
 from utils.run_process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
 
-import infrastructure.bus
-from .message import TransmittedMessage, CollisionSentinel, \
-    make_transmission_delay
+from .message import (
+    TransmittedMessage, CollisionSentinel, make_transmission_delay
+)
 
 
 class NetworkState(UpdatableProcess):
@@ -76,13 +78,15 @@ class NetworkNode:
 
     timeout_sentinel = object()
 
-    def __init__(self, env, transmission_speed):
+    def __init__(self, network):
 
-        self.env = env  # type: simpy.Environment
+        self.env = network.env  # type: simpy.Environment
 
-        self.__bus_list = []  # type: List[infrastructure.bus.Bus]
+        self.__netgraph = netgraph = weakref.proxy(network.netgraph)
         self.__network_state = NetworkState(self.env)
-        self.__transmission_speed = transmission_speed
+        self.__transmission_speed = network.transmission_speed
+
+        netgraph.add_node(self)
 
     @run_process
     def _send_to_network_proc(self, message_val: Any, message_len: int):
@@ -96,15 +100,10 @@ class NetworkNode:
 
         message = TransmittedMessage(message_val, transmission_delay)
 
-        for bus in self.__bus_list:
+        for bus in self.__netgraph.neighbors(self):
             bus.send_to_bus_proc(message)
 
         self.__network_state.occupy(message)
-
-    def register_bus(self, bus, mutual=False):
-        self.__bus_list.append(bus)
-        if mutual:
-            bus.register_node(self, False)
 
     @run_process
     def send_to_node_proc(self, message: TransmittedMessage):
@@ -144,4 +143,3 @@ class NetworkNode:
             return self.timeout_sentinel
 
         assert False, "Spurious wake"
-
