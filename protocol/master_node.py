@@ -6,9 +6,7 @@ from typing import List, Dict
 import networkx as nx
 import simpy
 
-from protocol.packet import (
-    ResponsePacket, RequestPacket, HelloRequestPacket, HelloResponsePacket
-)
+from protocol.packet import Packet, RequestPacket, ResponsePacket
 from protocol.application import Application
 from protocol.rethunder_node import ReThunderNode
 from protocol.node_data_manager import NodeDataManager, NodeDataT
@@ -34,8 +32,8 @@ class MasterNode(ReThunderNode):
 
         self.node_graph = nx.Graph()    # type: nx.Graph
         self.application = application  # type: Application
-        self._sptree = None            # type: nx.DiGraph
-        self._shortest_paths = None    # type: Dict[NodeDataT, List[NodeDataT]]
+        self._sptree = None             # type: nx.DiGraph
+        self._shortest_paths = None     # type: Dict[NodeDataT, List[NodeDataT]]
         self._send_cond = BroadcastConditionVar(self.env)
         self._current_message = None
         self._current_message_path = None
@@ -81,9 +79,11 @@ class MasterNode(ReThunderNode):
     def _update_sptree(self):
         nodes = self._node_manager
 
-        shortest_paths = nx.shortest_path(self.node_graph, nodes[0], 'noise')
+        self._shortest_paths = shortest_paths = nx.shortest_path(
+            self.node_graph, nodes[0], weight='noise'
+        )
+
         self._sptree = shortest_paths_tree(shortest_paths)
-        self._shortest_paths = shortest_paths
 
     def _readdress_nodes(self):
 
@@ -310,7 +310,6 @@ class MasterNode(ReThunderNode):
         packet.source_logic = self.logic_address
 
         if tracer.new_address:
-            packet.code_has_new_logic_addr = True
             packet.new_logic_addr = address_stack.pop()
 
         packet.code_is_addressing_static = tracer.static_addressing
