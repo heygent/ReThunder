@@ -90,16 +90,17 @@ class MasterNode(ReThunderNode):
         sptree = self._sptree  # type: nx.DiGraph
         assert nx.is_tree(sptree)
 
-        next_previous_node = nodes[0]
+        previous_node_addr = 0
 
         # Addresses, not nodes, need to be iterated, because the address
         # associated with a node changes during the execution of the algorithm.
 
-        for logic_addr in nodes.logic_addresses_iter():
-            node = nodes.from_logic_address(logic_addr)
+        for logic_addr in nodes.logic_addresses_view()[1:]:
 
-            previous_node = next_previous_node
-            next_previous_node = node
+            node = nodes.from_logic_address(logic_addr)
+            previous_node = nodes.from_logic_address(previous_node_addr)
+
+            previous_node_addr = logic_addr
 
             while True:
                 father, = sptree.predecessors(node)
@@ -121,23 +122,21 @@ class MasterNode(ReThunderNode):
                 node.swap_logic_address(greatest_son)
                 continue
 
-            try:
-                ancestor_of_previous, = sptree.predecessors(previous_node)
-            except IndexError:
-                continue
+            ancestor_of_previous, = sptree.predecessors(previous_node)
 
             while (ancestor_of_previous != nodes[0] and
-                   father != ancestor_of_previous):
+                   ancestor_of_previous != father):
 
                 greatest_son = max(sptree.successors_iter(ancestor_of_previous),
                                    key=lambda x: x.logic_address)
 
                 if greatest_son.logic_address > node.logic_address:
                     node.swap_logic_address(greatest_son)
-                    node = greatest_son
-                    continue
+                    break
 
-                ancestor_of_previous, = sptree.predecessors(previous_node)
+                ancestor_of_previous, = sptree.predecessors(
+                    ancestor_of_previous
+                )
 
     def send_message(self, message, message_length,
                      destination_static_addr: int):
