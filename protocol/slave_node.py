@@ -5,7 +5,6 @@ from typing import Optional
 
 from protocol.packet import Packet, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
-from protocol.application import Application, DefaultApplication
 from protocol.tracer import Tracer
 from utils.func import singledispatchmethod
 from utils.run_process_decorator import run_process
@@ -17,7 +16,7 @@ class SlaveNode(ReThunderNode):
 
     def __init__(self, network, static_address: int,
                  logic_address: Optional[int]=None,
-                 application: Application=None):
+                 on_message_received=None):
 
         super().__init__(network, static_address, logic_address)
 
@@ -25,7 +24,7 @@ class SlaveNode(ReThunderNode):
         self.__response_waiting_address = None
 
         self.run_until = lambda: False
-        self.application = application or DefaultApplication()
+        self.on_message_received = on_message_received or (lambda x, y, z: None)
 
     def __repr__(self):
         return '<SlaveNode static_address={}>'.format(self.static_address)
@@ -159,8 +158,8 @@ class SlaveNode(ReThunderNode):
         self.last_sent_routing_table = self.routing_table
 
         response.payload, response.payload_length = \
-            self.application.message_received(
-                packet.payload, packet.payload_length
+            self.on_message_received(
+                self, packet.payload, packet.payload_length
             )
 
         return response
