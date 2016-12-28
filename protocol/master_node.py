@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import List, Dict
 
 import networkx as nx
+from networkx.algorithms import bipartite
 import simpy
 
 from protocol.packet import Packet, RequestPacket, ResponsePacket
@@ -40,6 +41,21 @@ class MasterNode(ReThunderNode):
 
     def __repr__(self):
         return '<MasterNode>'
+
+    def init_from_netgraph(self, netgraph: nx.Graph, initial_noise_value=0.5,
+                           assign_logic_addr=True):
+
+        addr_graph = bipartite.projected_graph(
+            netgraph, (node for node in netgraph.nodes_iter()
+                       if isinstance(node, ReThunderNode))
+        )
+
+        # noinspection PyTypeChecker
+        nx.relabel_nodes(addr_graph, lambda x: x.static_address, False)
+
+        return self.init_from_static_addr_graph(
+            addr_graph, initial_noise_value, assign_logic_addr
+        )
 
     def init_from_static_addr_graph(self, addr_graph, initial_noise_value=0.5,
                                     assign_logic_addr=True):
