@@ -4,11 +4,8 @@ import itertools
 import networkx as nx
 import random
 
-import simpy
-
-from infrastructure.network import Network
-from protocol.master_node import MasterNode
-from protocol.application import DefaultApplication
+from infrastructure import Network
+from protocol import MasterNode
 
 
 def _addressing_is_wrong(tree, current, current_next, father, father_next):
@@ -44,7 +41,7 @@ class MasterNodeTest(unittest.TestCase):
     def setUp(self):
 
         self.network = network = Network()
-        self.master = master = MasterNode(network, DefaultApplication)
+        self.master = master = MasterNode(network, lambda x, y, z: None)
 
         static_addr_graph = nx.Graph()
 

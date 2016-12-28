@@ -7,7 +7,6 @@ import networkx as nx
 import simpy
 
 from protocol.packet import Packet, RequestPacket, ResponsePacket
-from protocol.application import Application
 from protocol.rethunder_node import ReThunderNode
 from protocol.node_data_manager import NodeDataManager, NodeDataT
 from protocol.tracer import Tracer
@@ -26,12 +25,12 @@ class BusyError(Exception):
 
 class MasterNode(ReThunderNode):
 
-    def __init__(self, network, application):
+    def __init__(self, network, on_message_received):
 
         super().__init__(network, 0, 0)
 
         self.node_graph = nx.Graph()    # type: nx.Graph
-        self.application = application  # type: Application
+        self.on_message_received = on_message_received
         self._sptree = None             # type: nx.DiGraph
         self._shortest_paths = None     # type: Dict[NodeDataT, List[NodeDataT]]
         self._send_cond = BroadcastConditionVar(self.env)
@@ -214,8 +213,7 @@ class MasterNode(ReThunderNode):
         self._update_sptree()
         self._readdress_nodes()
 
-        self.application.message_received(packet.payload,
-                                          packet.payload_length)
+        self.on_message_received(self, packet.payload, packet.payload_length)
 
     def _make_request_packet(self, message, length, destination_addr):
 
