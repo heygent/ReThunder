@@ -85,6 +85,7 @@ class MasterNodeTest(unittest.TestCase):
             master._update_sptree()
             master._readdress_nodes()
 
+            # noinspection PyTypeChecker
             sptree = nx.relabel_nodes(master._sptree, lambda x: x.logic_address)
             self.assertFalse(addressing_is_wrong(sptree))
 
