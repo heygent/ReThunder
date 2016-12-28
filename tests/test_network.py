@@ -21,7 +21,7 @@ class TestNetwork(unittest.TestCase):
         prop_delay = self.prop_delay
         messages = [('Message{}'.format(i), 8) for i in range(10)]
 
-        sender = SenderNode(network)
+        sender = SenderNode(network, messages)
         receiver = ReceiverNode(network)
         bus = Bus(network, prop_delay)
 
@@ -58,4 +58,3 @@ class TestNetwork(unittest.TestCase):
         self.assertEqual(receiver.received,
                          [(6 * i, CollisionSentinel)
                           for i, (msg, _) in enumerate(messages, start=1)])
-
