@@ -10,6 +10,19 @@ FRAME_SIZE = 11
 PHYSICAL_ADDRESS_FRAMES = 2
 
 
+def list_and_bitmap_frame_count(list_len: int) -> int:
+    """
+    Calcola quanti frame conterrebbe il percorso degli indirizzi se
+    l'implementazione usasse una bitmap.
+
+    :param list_len: La lunghezza della lista degli indirizzi
+    :return: Il conto dei frame del percorso nel pacchetto
+    """
+
+    quot, rem = divmod(list_len, 11)
+    return list_len + quot + int(rem > 0) + 1
+
+
 class Packet(metaclass=abc.ABCMeta):
 
     __STATIC_FRAMES = 1
