@@ -1,9 +1,10 @@
-import simpy
 import logging
 from copy import copy, deepcopy
 from typing import Optional
 
-from protocol.packet import Packet, RequestPacket, ResponsePacket
+from protocol.packet import (
+    Packet, RequestPacket, ResponsePacket, PacketWithSource
+)
 from protocol.rethunder_node import ReThunderNode
 from protocol.tracer import Tracer
 from utils.func import singledispatchmethod
@@ -15,13 +16,13 @@ logger = logging.getLogger(__name__)
 class SlaveNode(ReThunderNode):
 
     def __init__(self, network, static_address: int,
-                 logic_address: Optional[int]=None,
-                 on_message_received=None):
+                 logic_address: Optional[int]=None, on_message_received=None):
 
         super().__init__(network, static_address, logic_address)
 
         self.last_sent_routing_table = {}
-        self.__response_waiting_address = None
+        self._previous_node_static_addr = None
+        self._ack_pending_token = None
 
         self.run_until = lambda: False
         self.on_message_received = on_message_received or (lambda x, y, z: None)
@@ -29,20 +30,20 @@ class SlaveNode(ReThunderNode):
     def __repr__(self):
         return '<SlaveNode static_address={}>'.format(self.static_address)
 
-    def __reset_response_wait(self):
-        self.__response_waiting_address = None
-
     @run_process
     def run_proc(self):
 
         while not self.run_until():
 
             received = yield self._receive_packet_proc()  # type: Packet
-            response = self._handle_received(received)
+
+            if isinstance(received, PacketWithSource):
+                yield from self._send_ack(received)
+
+            response = self._handle_received(received)  # type: Packet
 
             if response is not None:
-                yield self._send_to_network_proc(response,
-                                                 response.number_of_frames())
+                yield from self._send_and_acknowledge(response)
 
     def _is_destination_of(self, packet):
         if packet.code_is_addressing_static:
@@ -78,15 +79,7 @@ class SlaveNode(ReThunderNode):
         if packet.new_logic_addr is not None:
             self.logic_address = packet.new_logic_addr
 
-        if self.__response_waiting_address is not None:
-            logger.error(
-                '{} received {} while waiting for another RequestPacket. The '
-                'packet will not be forwarded'.format(self, packet),
-                extra={'request': deepcopy(packet)}
-            )
-            return None
-
-        self.__response_waiting_address = packet.source_static
+        self._previous_node_static_addr = packet.source_static
 
         if not self._is_destination_of(packet):
 
@@ -128,7 +121,7 @@ class SlaveNode(ReThunderNode):
         if packet.next_hop != self.static_address:
             return None
 
-        if self.__response_waiting_address is None:
+        if self._previous_node_static_addr is None:
             logger.warning('{} received a ResponseMessage for which there was '
                            'no answering address'.format(self))
             return None
@@ -136,8 +129,7 @@ class SlaveNode(ReThunderNode):
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
 
-        packet.next_hop = self.__response_waiting_address
-        self.__response_waiting_address = None
+        packet.next_hop = self._previous_node_static_addr
 
         packet.noise_tables.append(self.noise_table)
 
@@ -153,13 +145,13 @@ class SlaveNode(ReThunderNode):
         response.source_static = self.static_address
         response.source_logic = self.logic_address
         response.next_hop = packet.source_static
+        response.token = packet.token
 
         response.noise_tables.append(copy(self.noise_table))
         self.last_sent_routing_table = self.routing_table
 
-        response.payload, response.payload_length = \
-            self.on_message_received(
-                self, packet.payload, packet.payload_length
-            )
+        response.payload, response.payload_length = self.on_message_received(
+            self, packet.payload, packet.payload_length
+        )
 
         return response
