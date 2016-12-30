@@ -8,25 +8,21 @@ from infrastructure import Network
 from protocol import MasterNode
 
 
-def _addressing_is_wrong(tree, current, current_next, father, father_next):
+def _addressing_is_wrong(tree, current, current_succ, father, father_succ):
 
     if father is not None and current < father:
         return True
 
-    if father_next is not None and current > father_next:
+    if father_succ is not None and current > father_succ:
         return True
 
     sorted_successors = tree.successors(current)
     sorted_successors.sort()
 
     for child, child_next, in itertools.zip_longest(
-            sorted_successors, sorted_successors[1:]
+        sorted_successors, sorted_successors[1:]
     ):
-        wrong_addressing = _addressing_is_wrong(
-            tree, child, child_next, current, current_next
-        )
-
-        if wrong_addressing:
+        if _addressing_is_wrong(tree, child, child_next, current, current_succ):
             return True
 
     return False
