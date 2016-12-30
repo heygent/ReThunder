@@ -82,28 +82,28 @@ class NetworkNode:
 
         self.env = network.env  # type: simpy.Environment
 
-        self.__netgraph = netgraph = weakref.proxy(network.netgraph)
-        self.__network_state = NetworkState(self.env)
-        self.__transmission_speed = network.transmission_speed
+        self._netgraph = netgraph = weakref.proxy(network.netgraph)
+        self._network_state = NetworkState(self.env)
+        self._transmission_speed = network.transmission_speed
 
         netgraph.add_node(self)
 
     @run_process
     def _send_to_network_proc(self, message_val: Any, message_len: int):
 
-        if self.__network_state.network_is_busy:
-            yield self.__network_state.wait_free_network_ev()
+        if self._network_state.network_is_busy:
+            yield self._network_state.wait_free_network_ev()
 
         transmission_delay = make_transmission_delay(
-            self.__transmission_speed, message_len
+            self._transmission_speed, message_len
         )
 
         message = TransmittedMessage(message_val, transmission_delay)
 
-        for bus in self.__netgraph.neighbors(self):
+        for bus in self._netgraph.neighbors(self):
             bus.send_to_bus_proc(message)
 
-        self.__network_state.occupy(message)
+        self._network_state.occupy(message)
 
     @run_process
     def send_to_node_proc(self, message: TransmittedMessage):
@@ -112,14 +112,14 @@ class NetworkNode:
         if False:
             yield
 
-        self.__network_state.occupy(message)
+        self._network_state.occupy(message)
 
     @run_process
     def _receive_proc(self, timeout=None):
 
         env = self.env
 
-        received = self.__network_state.receive_current_transmission_ev()
+        received = self._network_state.receive_current_transmission_ev()
 
         if timeout is None:
             to = env.event()
