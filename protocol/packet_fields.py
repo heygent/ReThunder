@@ -1,11 +1,11 @@
-from typing import Optional
+from typing import Optional, List, Tuple, Any
 
 
 class FixedSizeInt:
 
-    def __init__(self, max_size, init_value: Optional[int]=0, optional=False):
+    def __init__(self, max_bits, init_value: Optional[int]=0, optional=False):
 
-        self.__max_size = max_size  # type: int
+        self.max_bits = max_bits    # type: int
         self.__optional = optional  # type: bool
         self.__validate(init_value)
         self.__value = init_value   # type: Optional[int]
@@ -22,7 +22,7 @@ class FixedSizeInt:
         if value is None:
             if not self.__optional:
                 raise ValueError("Value can't be None")
-        elif value.bit_length() > self.__max_size:
+        elif value.bit_length() > self.max_bits:
             raise ValueError("Integer too big for this field")
 
 
