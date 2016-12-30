@@ -4,10 +4,13 @@ from typing import Optional
 
 from infrastructure.message import CollisionSentinel
 from infrastructure.node import NetworkNode
-from protocol.packet import Packet, PacketWithSource
+from protocol.packet import Packet, PacketWithSource, AckPacket
 from utils.run_process_decorator import run_process
 
 logger = logging.getLogger(__name__)
+
+RETRANSMISSIONS = 3
+ACK_TIMEOUT = 15
 
 
 class ReThunderNode(NetworkNode):
@@ -66,3 +69,43 @@ class ReThunderNode(NetworkNode):
                 continue
 
             return received_packet
+
+    def _send_and_acknowledge(self, to_send: Packet):
+
+        token = to_send.token
+        transmissions = 0
+        transmit = True
+
+        while transmissions < RETRANSMISSIONS:
+
+            if transmit:
+
+                transmissions += 1
+                transmit = False
+                yield self._send_to_network_proc(
+                    to_send, to_send.number_of_frames()
+                )
+
+            received = yield self._receive_packet_proc(ACK_TIMEOUT)
+
+            if received is self.timeout_sentinel:
+                transmit = True
+
+            elif isinstance(received, AckPacket):
+                if (received.next_hop == self.static_address and
+                        received.token == token):
+                    return True
+            else:
+                logger.warning("{} received something while waiting "
+                               "for an ack. Ignoring".format(self))
+
+        return False
+
+    def _send_ack(self, packet):
+
+        if getattr(packet, 'source_static', None) is None:
+            return
+
+        ack = AckPacket(of=packet)
+
+        yield self._send_to_network_proc(ack, ack.number_of_frames())
