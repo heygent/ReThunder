@@ -97,6 +97,15 @@ class PacketWithSource(Packet):
         return 2
 
 
+class PacketWithNextHop(Packet):
+
+    next_hop = FixedSizeInt(FRAME_SIZE)
+
+    @abc.abstractclassmethod
+    def _frame_increment(self):
+        return 1
+
+
 class HelloRequestPacket(PacketWithPhysicalAddress):
 
     def __init__(self):
@@ -124,11 +133,31 @@ class HelloResponsePacket(PacketWithPhysicalAddress, PacketWithSource):
         return 2
 
 
-class CommunicationPacket(PacketWithSource):
+class AckPacket(PacketWithNextHop):
 
-    __STATIC_FRAMES = 2
+    def __init__(self, of=None):
 
-    next_hop        = FixedSizeInt(FRAME_SIZE)
+        super().__init__()
+
+        if of is not None:
+
+            self.code_destination_is_endpoint = of.code_destination_is_endpoint
+            self.code_is_addressing_static = of.code_is_addressing_static
+            self.code_is_node_init = of.code_is_node_init
+            self.token = of.token
+            self.next_hop = of.source_static
+
+    def __repr__(self):
+        return '<AckPacket tok={} dest={}>'.format(self.token, self.next_hop)
+
+    def _frame_increment(self):
+        return 0
+
+
+class CommunicationPacket(PacketWithSource, PacketWithNextHop):
+
+    __STATIC_FRAMES = 1
+
     payload_length  = FixedSizeInt(FRAME_SIZE)
 
     def __init__(self):
@@ -186,7 +215,6 @@ class ResponsePacket(CommunicationPacket):
 
     def __init__(self):
         super().__init__()
-        self.response = True
         self.noise_tables = []      # type: List[Dict[int, int]]
         self.new_node_list = []     # type: List[int]
 
