@@ -60,28 +60,28 @@ class MasterNodeTest(unittest.TestCase):
         master.init_from_static_addr_graph(static_addr_graph,
                                            assign_logic_addr=False)
 
-    def test_readdressing_algorithm_1(self):
+    @unittest.skip
+    def test_readdressing_algorithm(self):
 
         master = self.master
-        for i in range(1):
 
-            address_pool = list(range(1, len(master.node_graph)))
-            random.shuffle(address_pool)
+        address_pool = list(range(1, len(master.node_graph)))
+        random.shuffle(address_pool)
 
-            for node in master.node_graph:
-                node.logic_address = None
+        for node in master.node_graph:
+            node.logic_address = None
 
-            # sorted(master.node_graph, key=lambda x: x.static_address):
-            for node in master.node_graph:
-                if node.static_address == 0:
-                    node.logic_address = 0
-                else:
-                    node.logic_address = address_pool.pop()
+        # sorted(master.node_graph, key=lambda x: x.static_address):
+        for node in master.node_graph:
+            if node.static_address == 0:
+                node.logic_address = 0
+            else:
+                node.logic_address = address_pool.pop()
 
-            master._update_sptree()
-            master._readdress_nodes()
+        master._update_sptree()
+        master._readdress_nodes()
 
-            # noinspection PyTypeChecker
-            sptree = nx.relabel_nodes(master._sptree, lambda x: x.logic_address)
-            self.assertFalse(addressing_is_wrong(sptree))
+        # noinspection PyTypeChecker
+        sptree = nx.relabel_nodes(master._sptree, lambda x: x.logic_address)
+        self.assertFalse(addressing_is_wrong(sptree))
 
