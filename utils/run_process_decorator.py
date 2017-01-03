@@ -1,6 +1,17 @@
 from functools import wraps
 
 
+def as_generator(fn):
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if False:
+            yield
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
 def run_process(process_fn, env_attr='env'):
 
     @wraps(process_fn)
