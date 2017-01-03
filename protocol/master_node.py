@@ -179,14 +179,15 @@ class MasterNode(ReThunderNode):
                 yield env.timeout(self._answer_pending.expiring_time - env.now)
                 self._answer_pending = None
             except simpy.Interrupt:
-                logger.warning("{} request message was preempted before "
-                               "expiry.")
+                logger.warning(
+                    f"{self} request message was preempted before expiry."
+                )
 
     @run_process
     def run_proc(self):
 
         if self._sptree is None:
-            raise ValueError("{} must be initialized before it's started.")
+            raise ValueError(f"{self} must be initialized before it's started.")
 
         env = self.env
 
@@ -234,24 +235,16 @@ class MasterNode(ReThunderNode):
                 self._handle_received(recv_ev.value)
 
     @singledispatchmethod
-    def _handle_received(self, reveived):
-
-        logger.error(
-            '{} received something unsupported.'
-            .format(self), extra={'received': reveived}
-        )
+    def _handle_received(self, _):
+        logger.error(f'{self} received something unsupported.')
 
     @_handle_received.register(Packet)
     def _(self, packet):
-
-        logger.warning(
-            '{} received {}, which cannot be handled.'
-            .format(self, packet), extra={'packet': deepcopy(packet)}
-        )
+        logger.warning(f'{self} received {packet}, which cannot be handled.')
 
     @_handle_received.register(RequestPacket)
-    def _(self, packet):
-        pass
+    def _(self, _):
+        logger.warning(f'{self} received a RequestPacket.')
 
     @_handle_received.register(ResponsePacket)
     def _(self, packet):
@@ -259,10 +252,14 @@ class MasterNode(ReThunderNode):
         answer_pending = self._answer_pending
 
         if answer_pending.token != packet.token:
-            logger.warning('{} has received an answer with token {}. Current '
-                           'token is {}, ignoring'
-                           .format(self, packet.token, answer_pending.token))
+            logger.warning(
+                f'{self} has received an answer with token '
+                f'{packet.token}. Current token is {answer_pending.token}, '
+                'ignoring'
+            )
             return
+
+        logger.debug(f"{self} received answer to token {packet.token}")
 
         self._update_node_graph(packet)
         self._update_sptree()
