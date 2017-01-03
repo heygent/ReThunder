@@ -37,13 +37,13 @@ class BusState(UpdatableProcess):
         self.on_collision = None
 
         self.__propagation_delay = propagation_delay
-        self.__current_message = None
+        self._current_message = None
         self.__current_transmission_ended = BroadcastConditionVar(env)
         self.__last_collision_time = None
 
     @property
     def current_message(self):
-        return self.__current_message
+        return self._current_message
 
     @property
     def last_collision_time(self):
@@ -55,7 +55,7 @@ class BusState(UpdatableProcess):
 
     def _on_start(self, init_value):
 
-        self.__current_message = init_value
+        self._current_message = init_value
         self.__last_collision_time = None
         self._stop_ev = self.env.timeout(self.__propagation_delay)
 
@@ -72,14 +72,14 @@ class BusState(UpdatableProcess):
         collided_message = TransmittedMessage(
             CollisionSentinel,
             max(new_message.transmission_delay,
-                self.__current_message.transmission_delay)
+                self._current_message.transmission_delay),
         )
 
-        self.__current_message = collided_message
+        self._current_message = collided_message
 
     def _on_stop(self, stop_value):
 
-        message = self.__current_message  # type: TransmittedMessage
+        message = self._current_message  # type: TransmittedMessage
 
         if self.__last_collision_time is not None:
             collision_time_passed = (

@@ -23,7 +23,7 @@ class NetworkState(UpdatableProcess):
 
         self.__network_is_free = ConditionVar(self.env)
         self.__current_transmission_ended = BroadcastConditionVar(self.env)
-        self.__current_message = None
+        self._current_message = None
 
     def wait_free_network_ev(self) -> simpy.Event:
         return self.__network_is_free.wait()
@@ -37,10 +37,10 @@ class NetworkState(UpdatableProcess):
 
     def _on_start(self, init_value):
 
-        self.__current_message = init_value
+        self._current_message = init_value
 
         self._stop_ev = self.env.timeout(
-            self.__current_message.transmission_delay
+            self._current_message.transmission_delay
         )
 
     def _on_update(self, update_value):
@@ -49,7 +49,7 @@ class NetworkState(UpdatableProcess):
 
         occupation_time_passed = (env.now - self._start_time)
 
-        occupation_time_left = (self.__current_message.transmission_delay -
+        occupation_time_left = (self._current_message.transmission_delay -
                                 occupation_time_passed)
 
         assert occupation_time_left > 0
@@ -62,14 +62,15 @@ class NetworkState(UpdatableProcess):
 
         self._stop_ev = env.timeout(new_occupation_time_left)
 
-        self.__current_message = TransmittedMessage(
+        self._current_message = TransmittedMessage(
             CollisionSentinel,
-            occupation_time_passed + new_occupation_time_left
+            occupation_time_passed + new_occupation_time_left,
+            None
         )
 
     def _on_stop(self, _):
 
-        message, self.__current_message = self.__current_message, None
+        message, self._current_message = self._current_message, None
         self.__network_is_free.signal()
         self.__current_transmission_ended.broadcast(message)
 
