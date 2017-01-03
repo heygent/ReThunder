@@ -44,7 +44,7 @@ class MasterNode(ReThunderNode):
         self._send_cond = BroadcastConditionVar(self.env)
         self._answer_pending = None
         self._node_manager = NodeDataManager()
-        self._token_it = itertools.cycle(range(1 << Packet.token.max_bits))
+        self._token_it = itertools.cycle(range(1 << Packet.TOKEN_BIT_SIZE))
 
     def __repr__(self):
         return '<MasterNode>'

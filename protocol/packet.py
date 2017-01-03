@@ -28,7 +28,8 @@ class Packet(metaclass=abc.ABCMeta):
     __STATIC_FRAMES = 1
 
     version = FixedSizeInt(2)
-    token = FixedSizeInt(3)
+    TOKEN_BIT_SIZE = 3
+    token = FixedSizeInt(TOKEN_BIT_SIZE)
 
     def __init__(self):
 
