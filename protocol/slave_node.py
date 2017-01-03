@@ -35,14 +35,12 @@ class SlaveNode(ReThunderNode):
         while not self.run_until():
 
             received = yield self._receive_packet_proc()  # type: Packet
-
-            if isinstance(received, PacketWithSource):
-                yield from self._send_ack(received)
-
             response = self._handle_received(received)  # type: Packet
 
             if response is not None:
-                yield from self._send_and_acknowledge(response)
+                self._send_to_network_proc(
+                    response, response.number_of_frames()
+                )
 
     def _is_destination_of(self, packet):
         if packet.code_is_addressing_static:

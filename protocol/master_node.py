@@ -175,6 +175,10 @@ class MasterNode(ReThunderNode):
             yield req
             self._send_cond.broadcast((message, message_length,
                                        destination_static_addr))
+
+            if self._answer_pending is None:
+                return
+
             try:
                 yield env.timeout(self._answer_pending.expiring_time - env.now)
                 self._answer_pending = None
@@ -213,26 +217,22 @@ class MasterNode(ReThunderNode):
                 path_to_dest = self._shortest_paths[dest]
 
                 packet = self._make_request_packet(msg, msg_len, path_to_dest)
-                acknowledged = (yield from self._send_and_acknowledge(packet))
+                self._send_to_network_proc(packet, packet.number_of_frames())
 
-                if acknowledged:
+                estimated_rtt = (
+                    len(path_to_dest) *
+                    ACK_TIMEOUT *
+                    RETRANSMISSIONS *
+                    make_transmission_delay(self._transmission_speed,
+                                            packet.number_of_frames())
+                ) // 2
 
-                    estimated_rtt = (
-                        len(path_to_dest) *
-                        ACK_TIMEOUT *
-                        RETRANSMISSIONS *
-                        make_transmission_delay(self._transmission_speed,
-                                                packet.number_of_frames())
-                    ) // 2
-
-                    self._answer_pending = AnswerPendingRecord(
-                        packet.token, path_to_dest,
-                        expiring_time=self.env.now + estimated_rtt
-                    )
+                self._answer_pending = AnswerPendingRecord(
+                    packet.token, path_to_dest,
+                    expiring_time=self.env.now + estimated_rtt
+                )
 
             if recv_ev.processed:
-
-                yield from self._send_ack(recv_ev.value)
                 self._handle_received(recv_ev.value)
 
     @singledispatchmethod
