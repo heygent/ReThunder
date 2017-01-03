@@ -106,8 +106,10 @@ class SlaveNode(ReThunderNode):
             return None
 
         if self._previous_node_static_addr is None:
-            logger.warning('{} received a ResponseMessage for which there was '
-                           'no answering address'.format(self))
+            logger.warning(
+                f'{self} received a ResponseMessage for which there was '
+                'no answering address'
+            )
             return None
 
         packet.source_static = self.static_address
@@ -121,8 +123,7 @@ class SlaveNode(ReThunderNode):
 
     def _make_response_packet(self, packet):
 
-        logger.info('{} received a payload'.format(self),
-                    extra={'payload': packet.payload})
+        logger.info(f'{self} received a payload')
 
         response = ResponsePacket()
 
