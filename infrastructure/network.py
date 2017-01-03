@@ -16,6 +16,11 @@ class Network:
         self.netgraph = netgraph or nx.Graph()
         self.transmission_speed = transmission_speed
 
+    def run_nodes_processes(self):
+        for node in self.netgraph.nodes_iter():
+            if hasattr(node, 'run_proc'):
+                node.run_proc()
+
     def configure_log_handler(self, handler):
 
         handler.setFormatter(self._logging_formatter)
