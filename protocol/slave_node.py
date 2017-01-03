@@ -62,6 +62,8 @@ class SlaveNode(ReThunderNode):
         if packet.next_hop != self.static_address:
             return None
 
+        self._previous_node_static_addr = packet.source_static
+
         new_logic_addr = packet.new_logic_addresses.get(self.static_address)
 
         if new_logic_addr is not None:
@@ -69,8 +71,6 @@ class SlaveNode(ReThunderNode):
 
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
-
-        self._previous_node_static_addr = packet.source_static
 
         if not self._is_destination_of(packet):
 
