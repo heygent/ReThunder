@@ -208,7 +208,8 @@ class MasterNode(ReThunderNode):
 
             if send_ev.processed:
 
-                msg, msg_len, dest = send_ev.value
+                msg, msg_len, dest_addr = send_ev.value
+                dest = self._node_manager[dest_addr]
                 path_to_dest = self._shortest_paths[dest]
 
                 packet = self._make_request_packet(msg, msg_len, path_to_dest)
