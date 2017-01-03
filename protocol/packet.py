@@ -197,7 +197,7 @@ class RequestPacket(CommunicationPacket):
         self.new_logic_addresses = None  # type: Dict[int, int]
 
     def __repr__(self):
-        return '<RequestPacket source={}, next_hop={}>'.format(
+        return '<RequestPacket source={} next_hop={}>'.format(
             self.source_static, self.next_hop
         )
 
@@ -221,7 +221,7 @@ class ResponsePacket(CommunicationPacket):
         self.new_node_list = []     # type: List[int]
 
     def __repr__(self):
-        return '<ResponsePacket source={}, next_hop={}>'.format(
+        return '<ResponsePacket source={} next_hop={}>'.format(
             self.source_static, self.next_hop
         )
 
