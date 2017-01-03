@@ -1,3 +1,4 @@
+import logging
 import weakref
 
 import simpy
@@ -7,6 +8,8 @@ from infrastructure.message import TransmittedMessage, CollisionSentinel
 from utils.condition_var import BroadcastConditionVar
 from utils.run_process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
+
+logger = logging.getLogger(__name__)
 
 
 class BusState(UpdatableProcess):
@@ -69,6 +72,10 @@ class BusState(UpdatableProcess):
         except TypeError:
             pass
 
+        logger.info(
+            f"A collision has happened between {self._current_message} and "
+            f"{update_value}"
+        )
         collided_message = TransmittedMessage(
             CollisionSentinel,
             max(new_message.transmission_delay,

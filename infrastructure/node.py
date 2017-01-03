@@ -1,4 +1,5 @@
 import weakref
+import logging
 from typing import Any
 
 import simpy
@@ -11,6 +12,8 @@ from utils.updatable_process import UpdatableProcess
 from .message import (
     TransmittedMessage, CollisionSentinel, make_transmission_delay
 )
+
+logger = logging.getLogger(__name__)
 
 
 class NetworkState(UpdatableProcess):
@@ -52,6 +55,10 @@ class NetworkState(UpdatableProcess):
         occupation_time_left = (self._current_message.transmission_delay -
                                 occupation_time_passed)
 
+        logger.info(
+            f"A collision has happened between {self._current_message} "
+            f"and {update_value}"
+        )
         assert occupation_time_left > 0
 
         new_message = update_value  # type: TransmittedMessage
