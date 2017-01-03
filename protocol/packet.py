@@ -101,7 +101,7 @@ class PacketWithNextHop(Packet):
 
     next_hop = FixedSizeInt(FRAME_SIZE)
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def _frame_increment(self):
         return 1
 
