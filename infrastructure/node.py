@@ -20,13 +20,18 @@ class NetworkState(UpdatableProcess):
 
     occupy = UpdatableProcess.update
 
-    def __init__(self, env: simpy.Environment):
+    def __init__(self, env: simpy.Environment, owner=None):
 
         super().__init__(env)
 
         self.__network_is_free = ConditionVar(self.env)
         self.__current_transmission_ended = BroadcastConditionVar(self.env)
         self._current_message = None
+
+        if owner is None:
+            self._owner = lambda: None
+        else:
+            self._owner = weakref.ref(owner)
 
     def wait_free_network_ev(self) -> simpy.Event:
         return self.__network_is_free.wait()
@@ -56,8 +61,8 @@ class NetworkState(UpdatableProcess):
                                 occupation_time_passed)
 
         logger.info(
-            f"A collision has happened between {self._current_message} "
-            f"and {update_value}"
+            f"{self._owner()!r}: A collision has happened between "
+            f"{self._current_message} and {update_value}"
         )
         assert occupation_time_left > 0
 
@@ -91,7 +96,7 @@ class NetworkNode:
         self.env = network.env  # type: simpy.Environment
 
         self._netgraph = netgraph = weakref.proxy(network.netgraph)
-        self._network_state = NetworkState(self.env)
+        self._network_state = NetworkState(self.env, self)
         self._transmission_speed = network.transmission_speed
 
         netgraph.add_node(self)
