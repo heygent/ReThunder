@@ -1,12 +1,11 @@
 import logging
-from copy import copy, deepcopy
+from copy import copy
 from typing import Optional
 
 from protocol.packet import (
-    Packet, RequestPacket, ResponsePacket, PacketWithSource
+    Packet, RequestPacket, ResponsePacket, PacketWithSource, AddressType
 )
 from protocol.rethunder_node import ReThunderNode
-from protocol.tracer import Tracer
 from utils.func import singledispatchmethod
 from utils.run_process_decorator import run_process
 
@@ -52,32 +51,26 @@ class SlaveNode(ReThunderNode):
             return self.logic_address == packet.destination
 
     @singledispatchmethod
-    def _handle_received(self, received):
-
-        logger.error(
-            '{} received something unsupported.'.format(self),
-            extra={'received': received}
-        )
+    def _handle_received(self, _):
+        logger.error(f'{self} received something unsupported.')
 
     @_handle_received.register(Packet)
     def _(self, packet):
-
-        logger.warning(
-            '{} received {}, which cannot be handled.'
-            .format(self, packet), extra={'packet': deepcopy(packet)}
-        )
+        logger.warning(f'{self} received {packet}, which cannot be handled.')
 
     @_handle_received.register(RequestPacket)
-    def _request_packet_received(self, packet):
+    def _request_packet_received(self, packet: RequestPacket):
 
         if packet.next_hop != self.static_address:
             return None
 
+        new_logic_addr = packet.new_logic_addresses.get(self.static_address)
+
+        if new_logic_addr is not None:
+            self.logic_address = new_logic_addr
+
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
-
-        if packet.new_logic_addr is not None:
-            self.logic_address = packet.new_logic_addr
 
         self._previous_node_static_addr = packet.source_static
 
@@ -97,18 +90,9 @@ class SlaveNode(ReThunderNode):
 
         elif not packet.code_destination_is_endpoint:
 
-            if packet.tracers_list[-1].offset == 0:
-                tracer = packet.tracers_list.pop()
-            else:
-                packet.tracers_list[-1].offset -= 1
-                tracer = Tracer()
-
-            packet.code_is_addressing_static = tracer.static_addressing
-
-            if tracer.new_address:
-                packet.new_logic_addr = packet.path.pop()
-
-            packet.destination = packet.path.pop()
+            dest_type, dest = packet.path.pop()
+            packet.destination = dest
+            packet.code_is_addressing_static = dest_type is AddressType.static
 
             return packet
 

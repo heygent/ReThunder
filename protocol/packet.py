@@ -1,26 +1,26 @@
 import abc
+import enum
 import inspect
+import math
 from collections import defaultdict
-from typing import List, Dict, Optional
+from typing import List, Dict, Tuple
 
 from protocol.packet_fields import FixedSizeInt
-from protocol.tracer import Tracer
 
 FRAME_SIZE = 11
 PHYSICAL_ADDRESS_FRAMES = 2
 
 
-def list_and_bitmap_frame_count(list_len: int) -> int:
+def bitmap_frame_count(list_len: int):
     """
-    Calcola quanti frame conterrebbe il percorso degli indirizzi se
-    l'implementazione usasse una bitmap.
+    Calcola quanti frame conterrebbe la bitmap corrispondente a un percorso
+    di indirizzi.
 
     :param list_len: La lunghezza della lista degli indirizzi
-    :return: Il conto dei frame del percorso nel pacchetto
+    :return: La lunghezza della bitmap
     """
 
-    quot, rem = divmod(list_len, 11)
-    return list_len + quot + int(rem > 0) + 1
+    return math.ceil(list_len / FRAME_SIZE)
 
 
 class Packet(metaclass=abc.ABCMeta):
@@ -177,20 +177,23 @@ class CommunicationPacket(PacketWithSource, PacketWithNextHop):
         return frames
 
 
+class AddressType(enum.Enum):
+    logic = 0
+    static = 1
+
+
 class RequestPacket(CommunicationPacket):
 
     __STATIC_FRAMES = 3
 
-    new_static_addr = CommunicationPacket.payload_length
     destination     = FixedSizeInt(FRAME_SIZE)
-    new_logic_addr  = FixedSizeInt(FRAME_SIZE, init_value=None, optional=True)
 
     def __init__(self):
 
         super().__init__()
 
-        self.tracers_list = None   # type: Optional[List[Tracer]]
-        self.path = None           # type: Optional[List[int]]
+        self.path = None                 # type: List[Tuple[AddressType, int]]
+        self.new_logic_addresses = None  # type: Dict[int, int]
 
     def __repr__(self):
         return '<RequestPacket source={}, next_hop={}>'.format(
@@ -200,11 +203,9 @@ class RequestPacket(CommunicationPacket):
     def _frame_increment(self):
 
         frames = self.__STATIC_FRAMES
-
-        frames += int(self.new_static_addr is not None)
-        frames += len(self.path or ())
-        frames += sum(tracer.number_of_frames()
-                      for tracer in self.tracers_list or ())
+        path_len = len(self.path)
+        frames += path_len + bitmap_frame_count(path_len)
+        frames += len(self.new_logic_addresses) * 2
 
         return frames
 

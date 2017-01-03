@@ -1,21 +1,19 @@
 import logging
 import itertools
 from collections import namedtuple
-from copy import deepcopy
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import networkx as nx
 from networkx.algorithms import bipartite
 import simpy
 
 from infrastructure.message import make_transmission_delay
+from protocol.packet import AddressType
 from protocol.packet import Packet, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode, ACK_TIMEOUT, RETRANSMISSIONS
 from protocol.node_data_manager import NodeDataManager, NodeDataT
-from protocol.tracer import Tracer
 from utils.condition_var import BroadcastConditionVar
 from utils.func import singledispatchmethod
-from utils.iterblocks import iterblocks
 from utils.preemption_first_resource import PreemptionFirstResource
 from utils.run_process_decorator import run_process
 from utils.graph import shortest_paths_tree, preorder_tree_dfs
@@ -283,24 +281,20 @@ class MasterNode(ReThunderNode):
 
         destination_addr = path_to_dest[-1].logic_address
 
-        address_stack = []           # type: List[int]
-        tracer_stack = []            # type: List[Tracer]
+        path = []           # type: List[Tuple[AddressType, int]]
+        new_addrs = {}      # type: Dict[int, int]
 
         next_static_addressing_used = True
 
-        for next_node, node in iterblocks(reversed(path_to_dest), 2, 1):
+        for next_node, node in zip(path_to_dest[::-1], path_to_dest[-2::-1]):
 
             static_addressing_used = next_static_addressing_used
             next_static_addressing_used = False
 
             if next_node.current_logic_address is None:
 
-                address_stack.append(next_node.static_address)
-                address_stack.append(next_node.logic_address)
-
-                tracer_stack.append(
-                    Tracer(static_addressing=True, new_address=True)
-                )
+                new_addrs[next_node.static_address] = next_node.logic_address
+                path.append((AddressType.static, next_node.static_address))
 
                 destination_addr = next_node.logic_address
                 next_static_addressing_used = True
@@ -321,57 +315,40 @@ class MasterNode(ReThunderNode):
 
             ambiguous_addressing = len(candidates) > 1
 
-            tracer = Tracer()
-
             if ambiguous_addressing:
-                tracer.static_addressing = True
-                address_stack.append(next_node.static_address)
+                path.append((AddressType.static, next_node.static_address))
 
                 destination_addr = next_node.current_logic_address
                 next_static_addressing_used = True
 
-            elif wrong_addressing:
-                address_stack.append(next_node.current_logic_address)
-
+            elif wrong_addressing or static_addressing_used:
                 destination_addr = next_node.current_logic_address
-                next_static_addressing_used = True
-
-            elif static_addressing_used:
-                address_stack.append(next_node.current_logic_address)
-                destination_addr = next_node.current_logic_address
+                path.append((AddressType.logic, destination_addr))
 
             if next_node.logic_address != next_node.current_logic_address:
-                tracer.new_address = True
-                address_stack.append(next_node.logic_address)
-
-            if tracer.is_valid():
-                tracer_stack.append(tracer)
-            else:
-                tracer_stack[-1].offset += 1
+                new_addrs[next_node.static_address] = next_node.logic_address
 
         packet = RequestPacket()
         packet.token = next(self._token_it)
 
-        if tracer_stack[-1].offset == 0:
-            tracer = tracer_stack.pop()
-        else:
-            tracer_stack[-1].offset -= 1
-            tracer = Tracer()
-
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
 
-        if tracer.new_address:
-            packet.new_logic_addr = address_stack.pop()
+        dest_type, dest = path.pop()
 
-        packet.code_is_addressing_static = tracer.static_addressing
-        packet.destination = address_stack.pop()
+        packet.destination = dest
+        packet.code_is_addressing_static = dest_type is AddressType.static
+
+        next_hop = path_to_dest[1]
+        packet.next_hop = next_hop.static_address
+
+        packet.code_destination_is_endpoint = len(path) == 0
 
         packet.payload = message
         packet.payload_length = length
 
-        packet.path = address_stack
-        packet.tracers_list = tracer_stack
+        packet.path = path
+        packet.new_logic_addresses = new_addrs
 
         return packet
 
