@@ -73,6 +73,7 @@ class BusState(UpdatableProcess):
             CollisionSentinel,
             max(new_message.transmission_delay,
                 self._current_message.transmission_delay),
+            None
         )
 
         self._current_message = collided_message
@@ -122,4 +123,5 @@ class Bus:
         message = yield self.__bus_state.receive_current_transmission_ev()
 
         for node in self.__netgraph.neighbors(self):
-            node.send_to_node_proc(message)
+            if node is not message.sender:
+                node.send_to_node_proc(message)

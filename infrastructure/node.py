@@ -99,7 +99,7 @@ class NetworkNode:
             self._transmission_speed, message_len
         )
 
-        message = TransmittedMessage(message_val, transmission_delay)
+        message = TransmittedMessage(message_val, transmission_delay, self)
 
         for bus in self._netgraph.neighbors(self):
             bus.send_to_bus_proc(message)

@@ -1,4 +1,4 @@
-import typing
+from collections import namedtuple
 
 
 class _CollisionSentinel:
@@ -10,8 +10,7 @@ CollisionSentinel = _CollisionSentinel()
 del _CollisionSentinel
 
 
-TransmittedMessage = typing.NamedTuple('Message', [('value', typing.Any),
-                                                   ('transmission_delay', int)])
+TransmittedMessage = namedtuple('Message', 'value, transmission_delay, sender')
 
 
 def make_transmission_delay(transmission_speed: int, msg_length: int) -> int:
