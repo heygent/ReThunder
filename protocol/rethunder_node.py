@@ -68,6 +68,8 @@ class ReThunderNode(NetworkNode):
             if not received_packet.is_readable():
                 continue
 
+            logger.debug(f'{self} received a packet.')
+
             return received_packet
 
     def _send_and_acknowledge(self, to_send: Packet):
@@ -96,8 +98,8 @@ class ReThunderNode(NetworkNode):
                         received.token == token):
                     return True
             else:
-                logger.warning("{} received something while waiting "
-                               "for an ack. Ignoring".format(self))
+                logger.warning("{} was waiting for ack, received something "
+                               "else. Ignoring".format(self))
 
         return False
 
