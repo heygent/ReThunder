@@ -38,14 +38,14 @@ class TestProtocol(unittest.TestCase):
         master.init_from_static_addr_graph(nx.path_graph(2))
         network.netgraph.add_edge(master_bus, slave)
 
-        master.send_message_proc(msg, len(msg), slave.static_address)
-
         logging.basicConfig(level=logging.DEBUG)
 
         for handler in logging.getLogger().handlers:
             network.configure_log_handler(handler)
 
         network.run_nodes_processes()
+        network.env.run()
+        master.send_message_proc(msg, len(msg), slave.static_address)
         network.env.run()
 
         received = self.received_by_master
