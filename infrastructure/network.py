@@ -32,3 +32,10 @@ class Network:
             return True
 
         handler.addFilter(env_filter)
+
+    def configure_root_logger(self, **kwargs):
+
+        logging.basicConfig(**kwargs)
+
+        for handler in logging.getLogger().handlers:
+            self.configure_log_handler(handler)
