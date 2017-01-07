@@ -40,8 +40,7 @@ class MasterNode(ReThunderNode):
         self.on_message_received = on_message_received
         self._sptree = None             # type: nx.DiGraph
         self._shortest_paths = None     # type: Dict[NodeDataT, List[NodeDataT]]
-        self._free_network_res = PreemptionFirstResource(self.env)
-        self._send_cond = BroadcastConditionVar(self.env)
+        self._send_store = simpy.Store(self.env)
         self._answer_pending = None
         self._node_manager = NodeDataManager()
         self._token_it = itertools.cycle(range(1 << Packet.TOKEN_BIT_SIZE))
@@ -164,28 +163,8 @@ class MasterNode(ReThunderNode):
                     ancestor_of_previous
                 )
 
-    @run_process
-    def send_message_proc(self, message, message_length,
-                          destination_static_addr: int, preempt=False):
-
-        env = self.env
-
-        with self._free_network_res.request(preempt) as req:
-
-            yield req
-            self._send_cond.broadcast((message, message_length,
-                                       destination_static_addr))
-
-            if self._answer_pending is None:
-                return
-
-            try:
-                yield env.timeout(self._answer_pending.expiring_time - env.now)
-                self._answer_pending = None
-            except simpy.Interrupt:
-                logger.warning(
-                    f"{self} request message was preempted before expiry."
-                )
+    def send_message_proc(self, message, message_length, dest_static_addr):
+        self._send_store.put((message, message_length, dest_static_addr))
 
     @run_process
     def run_proc(self):
@@ -194,16 +173,16 @@ class MasterNode(ReThunderNode):
             raise ValueError(f"{self} must be initialized before it's started.")
 
         env = self.env
+        send_ev = recv_ev = None
 
         while True:
 
-            send_ev = self._send_cond.wait()      # type: simpy.Event
-            recv_ev = self._receive_packet_proc()  # type: simpy.Event
+            send_ev = send_ev or self._send_store.get()
+            recv_ev = recv_ev or self._receive_packet_proc()
 
             events = (send_ev, recv_ev)
 
             yield env.any_of(events)
-
             # if the events happen at the same time unit, let them all be
             # processed before proceeding
             yield env.timeout(0)
@@ -211,29 +190,57 @@ class MasterNode(ReThunderNode):
             assert any(e.processed for e in events), "Spurious wake"
 
             if send_ev.processed:
-
-                msg, msg_len, dest_addr = send_ev.value
-                dest = self._node_manager[dest_addr]
-                path_to_dest = self._shortest_paths[dest]
-
-                packet = self._make_request_packet(msg, msg_len, path_to_dest)
-                self._send_to_network_proc(packet, packet.number_of_frames())
-
-                estimated_rtt = (
-                    len(path_to_dest) *
-                    ACK_TIMEOUT *
-                    RETRANSMISSIONS *
-                    make_transmission_delay(self._transmission_speed,
-                                            packet.number_of_frames())
-                ) // 2
-
-                self._answer_pending = AnswerPendingRecord(
-                    packet.token, path_to_dest,
-                    expiring_time=self.env.now + estimated_rtt
+                self._answer_pending = yield from self._handle_send_request(
+                    send_ev.value
                 )
+                yield from self._wait_for_answer()
+                send_ev = None
 
-            if recv_ev.processed:
+            elif recv_ev.processed:
                 self._handle_received(recv_ev.value)
+                recv_ev = None
+
+    def _handle_send_request(self, msg_data):
+        env = self.env
+
+        msg, msg_len, dest_addr = msg_data
+        dest = self._node_manager[dest_addr]
+        path_to_dest = self._shortest_paths[dest]
+
+        packet = self._make_request_packet(msg, msg_len, path_to_dest)
+
+        yield self._send_to_network_proc(
+            packet, packet.number_of_frames()
+        )
+
+        estimated_rtt = (
+            len(path_to_dest) *
+            make_transmission_delay(self._transmission_speed,
+                                    packet.number_of_frames())
+            + 50
+        )
+
+        return AnswerPendingRecord(packet.token, path_to_dest, env.now,
+                                   estimated_rtt)
+
+    def _wait_for_answer(self):
+        answer_pending: AnswerPendingRecord = self._answer_pending
+        to = self.env.timeout(answer_pending.expiry_delay)
+        recv_ev = None
+
+        while True:
+            recv_ev = recv_ev or self._receive_packet_proc(to)
+            received = yield recv_ev
+
+            if received is self.timeout_sentinel:
+                break
+            else:
+                self._handle_received(received)
+
+                if self._waiting_for_answer():
+                    recv_ev = None
+                else:
+                    break
 
     @singledispatchmethod
     def _handle_received(self, _):
@@ -364,3 +371,10 @@ class MasterNode(ReThunderNode):
             for dest_node, noise_level in noise_table.items():
 
                 node_graph[source_node][dest_node]['noise'] = noise_level
+
+    def _waiting_for_answer(self):
+        pending: AnswerPendingRecord = self._answer_pending
+
+        return pending is not None and (
+            pending.send_time + pending.expiry_delay
+        ) >= self.env.now
