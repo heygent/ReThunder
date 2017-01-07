@@ -113,7 +113,7 @@ class HelloRequestPacket(PacketWithPhysicalAddress):
         super().__init__()
 
     def __repr__(self):
-        return '<HelloRequestPacket addr={}>'.format(self.physical_address)
+        return f'<HelloRequestPacket addr={self.physical_address}>'
 
     def _frame_increment(self):
         return 0
@@ -128,7 +128,7 @@ class HelloResponsePacket(PacketWithPhysicalAddress, PacketWithSource):
     new_logic_address = FixedSizeInt(FRAME_SIZE)
 
     def __repr__(self):
-        return '<HelloResponsePacket addr={}>'.format(self.physical_address)
+        return f'<HelloResponsePacket addr={self.physical_address}>'
 
     def _frame_increment(self):
         return 2
@@ -149,7 +149,7 @@ class AckPacket(PacketWithNextHop):
             self.next_hop = of.source_static
 
     def __repr__(self):
-        return '<AckPacket tok={} dest={}>'.format(self.token, self.next_hop)
+        return f'<AckPacket tok={self.token} dest={self.next_hop}>'
 
     def _frame_increment(self):
         return 0
@@ -193,13 +193,12 @@ class RequestPacket(CommunicationPacket):
 
         super().__init__()
 
-        self.path = None                 # type: List[Tuple[AddressType, int]]
-        self.new_logic_addresses = None  # type: Dict[int, int]
+        self.path: List[Tuple[AddressType, int]] = None
+        self.new_logic_addresses: Dict[int, int] = None
 
     def __repr__(self):
-        return '<RequestPacket source={} next_hop={}>'.format(
-            self.source_static, self.next_hop
-        )
+        return f'<RequestPacket source={self.source_static}' \
+               f'next_hop={self.next_hop}>'
 
     def _frame_increment(self):
 
@@ -217,13 +216,12 @@ class ResponsePacket(CommunicationPacket):
 
     def __init__(self):
         super().__init__()
-        self.noise_tables = []      # type: List[Dict[int, int]]
-        self.new_node_list = []     # type: List[int]
+        self.noise_tables: List[Dict[int, int]] = []
+        self.new_node_list: List[int] = []
 
     def __repr__(self):
-        return '<ResponsePacket source={} next_hop={}>'.format(
-            self.source_static, self.next_hop
-        )
+        return f'<ResponsePacket source={self.source_static} ' \
+               f'next_hop={self.next_hop}>'
 
     def _frame_increment(self):
 

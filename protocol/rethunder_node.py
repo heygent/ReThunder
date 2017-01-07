@@ -25,7 +25,7 @@ class ReThunderNode(NetworkNode):
         self.routing_table = {}
 
     def __repr__(self):
-        return '<ReThunderNode static_address={}>'.format(self.static_address)
+        return f'<ReThunderNode static_address={self.static_address}>'
 
     def _update_noise_table(self, packet: Packet):
 

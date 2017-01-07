@@ -10,12 +10,12 @@ class UpdatableProcess(metaclass=abc.ABCMeta):
 
     def __init__(self, env: simpy.Environment):
 
-        self.env = env                                # type: simpy.Environment
-        self._update_ev = env.event()                 # type: simpy.Event
-        self._stop_ev = None                          # type: simpy.Event
-        self._start_time = None                       # type: Optional[int]
+        self.env: simpy.Environment = env
+        self._update_ev: simpy.Event = env.event()
+        self._stop_ev: simpy.Event = None
+        self._start_time: Optional[int] = None
 
-        self.__running_process = None                 # type: simpy.Process
+        self.__running_process: simpy.Process = None
 
     @run_process
     def __run_proc(self, init_value: List[Any]):

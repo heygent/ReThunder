@@ -6,7 +6,7 @@ class ConditionVar:
 
     def __init__(self, env: simpy.Environment):
 
-        self.env = env  # type: simpy.Environment
+        self.env: simpy.Environment = env
         self.__signal_events = collections.deque()
 
     def wait(self) -> simpy.Event:

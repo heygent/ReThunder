@@ -27,7 +27,7 @@ class SlaveNode(ReThunderNode):
         self.on_message_received = on_message_received or (lambda x, y, z: None)
 
     def __repr__(self):
-        return '<SlaveNode static_address={}>'.format(self.static_address)
+        return f'<SlaveNode static_address={self.static_address}>'
 
     @run_process
     def run_proc(self):

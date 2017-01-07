@@ -13,7 +13,7 @@ class ReceiverNode(NetworkNode):
 
         super().__init__(network)
 
-        self.received = []  # type: List[Tuple[int, Any]]
+        self.received: List[Tuple[int, Any]] = []
         self.run_until = lambda: False
 
     @run_process

@@ -36,10 +36,10 @@ class MasterNode(ReThunderNode):
 
         super().__init__(network, 0, 0)
 
-        self.node_graph = nx.Graph()    # type: nx.Graph
+        self.node_graph: nx.Graph = nx.Graph()
         self.on_message_received = on_message_received
-        self._sptree = None             # type: nx.DiGraph
-        self._shortest_paths = None     # type: Dict[NodeDataT, List[NodeDataT]]
+        self._sptree: nx.DiGraph = None
+        self._shortest_paths: Dict[NodeDataT, List[NodeDataT]] = None
         self._send_store = simpy.Store(self.env)
         self._answer_pending = None
         self._node_manager = NodeDataManager()

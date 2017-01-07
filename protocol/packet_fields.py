@@ -5,10 +5,10 @@ class FixedSizeInt:
 
     def __init__(self, max_bits, init_value: Optional[int]=0, optional=False):
 
-        self.max_bits = max_bits    # type: int
-        self.__optional = optional  # type: bool
+        self.max_bits: int = max_bits
+        self.__optional: bool = optional
         self.__validate(init_value)
-        self.__value = init_value   # type: Optional[int]
+        self.__value: Optional[int] = init_value
 
     def __get__(self, instance, owner):
         return self.__value
