@@ -145,14 +145,19 @@ class NetworkNode:
                 'timeout can be None, an integer or an event.'
             )
 
-        yield received or to
-        yield env.timeout(0)
+        while True:
+            yield received or to
+            yield env.timeout(0)
 
-        if received.processed:
-            # Both events and TransmittedMessages have the value attribute,
-            # resulting in this ugliness
-            return received.value.value
-        if to.processed:
-            return self.timeout_sentinel
+            assert any(e.processed for e in (received, to)), "Spurious wake"
 
-        assert False, "Spurious wake"
+            if received.processed:
+                transmitted_msg = received.value
+                if transmitted_msg.sender is not self:
+                    return transmitted_msg.value
+                else:
+                    received = \
+                        self._network_state.receive_current_transmission_ev()
+            if to.processed:
+                return self.timeout_sentinel
+
