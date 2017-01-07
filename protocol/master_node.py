@@ -363,6 +363,7 @@ class MasterNode(ReThunderNode):
     def _update_node_graph(self, packet: ResponsePacket):
 
         node_graph = self.node_graph
+        nodes = self._node_manager
         message_path = self._answer_pending.path
 
         for node in message_path:
@@ -371,8 +372,9 @@ class MasterNode(ReThunderNode):
         for source_node, noise_table in zip(reversed(message_path),
                                             packet.noise_tables):
 
-            for dest_node, noise_level in noise_table.items():
+            for dest_node_addr, noise_level in noise_table.items():
 
+                dest_node = nodes[dest_node_addr]
                 node_graph[source_node][dest_node]['noise'] = noise_level
 
     def _waiting_for_answer(self):
