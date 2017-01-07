@@ -22,5 +22,5 @@ class TransmittedMessage(_TransmittedMessageBase):
         )
 
 
-def make_transmission_delay(transmission_speed: int, msg_length: int) -> int:
-    return msg_length // transmission_speed + 1
+def make_transmission_delay(transmission_speed: float, msg_length: int) -> int:
+    return max(int(msg_length / transmission_speed), 1)
