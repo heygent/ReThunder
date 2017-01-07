@@ -1,6 +1,6 @@
 import logging
 import itertools
-from collections import namedtuple
+import collections
 from typing import List, Dict, Tuple
 
 import networkx as nx
@@ -21,8 +21,8 @@ from utils.graph import shortest_paths_tree, preorder_tree_dfs
 logger = logging.getLogger(__name__)
 
 
-AnswerPendingRecord = namedtuple(
-    'AnswerPendingRecord', 'token, path, expiring_time'
+AnswerPendingRecord = collections.namedtuple(
+    'AnswerPendingRecord', 'token, path, send_time, expiry_delay'
 )
 
 
