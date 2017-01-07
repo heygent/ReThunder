@@ -2,7 +2,6 @@ import logging
 import weakref
 
 import simpy
-import networkx as nx
 
 from infrastructure.message import TransmittedMessage, CollisionSentinel
 from utils.condition_var import BroadcastConditionVar

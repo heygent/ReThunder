@@ -3,7 +3,6 @@ import logging
 from typing import Any
 
 import simpy
-import networkx as nx
 
 from utils.condition_var import ConditionVar, BroadcastConditionVar
 from utils.run_process_decorator import run_process

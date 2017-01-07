@@ -1,22 +1,20 @@
-import logging
-import itertools
 import collections
+import itertools
+import logging
 from typing import List, Dict, Tuple
 
 import networkx as nx
-from networkx.algorithms import bipartite
 import simpy
+from networkx.algorithms import bipartite
 
 from infrastructure.message import make_transmission_delay
+from protocol.node_data_manager import NodeDataManager, NodeDataT
 from protocol.packet import AddressType
 from protocol.packet import Packet, RequestPacket, ResponsePacket
-from protocol.rethunder_node import ReThunderNode, ACK_TIMEOUT, RETRANSMISSIONS
-from protocol.node_data_manager import NodeDataManager, NodeDataT
-from utils.condition_var import BroadcastConditionVar
+from protocol.rethunder_node import ReThunderNode
 from utils.func import singledispatchmethod
-from utils.preemption_first_resource import PreemptionFirstResource
-from utils.run_process_decorator import run_process
 from utils.graph import shortest_paths_tree, preorder_tree_dfs
+from utils.run_process_decorator import run_process
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +277,8 @@ class MasterNode(ReThunderNode):
 
         self._answer_pending = None
 
-    def _make_request_packet(self, message, length, path_to_dest):
+    def _make_request_packet(self, message, length, path_to_dest) \
+            -> RequestPacket:
 
         node_graph = self.node_graph
 
@@ -289,8 +288,8 @@ class MasterNode(ReThunderNode):
 
         destination_addr = path_to_dest[-1].logic_address
 
-        path = []           # type: List[Tuple[AddressType, int]]
-        new_addrs = {}      # type: Dict[int, int]
+        path: List[Tuple[AddressType, int]] = []
+        new_addrs: Dict[int, int] = {}
 
         next_static_addressing_used = True
 

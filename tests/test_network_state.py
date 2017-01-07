@@ -2,8 +2,9 @@ import unittest
 
 import simpy
 
-from infrastructure.message import TransmittedMessage, make_transmission_delay, \
-    CollisionSentinel
+from infrastructure.message import (
+    TransmittedMessage, make_transmission_delay, CollisionSentinel
+)
 from infrastructure.node import NetworkState
 
 
@@ -58,7 +59,8 @@ class TestNetworkState(unittest.TestCase):
         env.process(schedule_proc(env, lambda: netstate.occupy(message2), 10))
 
         env.run()
-        self.assertEqual(received_list, [(60, TransmittedMessage(CollisionSentinel, 60))])
+        self.assertEqual(received_list,
+                         [(60, TransmittedMessage(CollisionSentinel, 60))])
 
     def test_immediate_consecutive_sends(self):
 

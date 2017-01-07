@@ -39,7 +39,8 @@ class BusStateTest(unittest.TestCase):
         env = simpy.Environment()
         bs = BusState(env, 5)
 
-        messages = [TransmittedMessage('Message{}'.format(i), 1000) for i in range(4)]
+        messages = [TransmittedMessage('Message{}'.format(i), 1000)
+                    for i in range(4)]
         received_messages = []
 
         for msg in messages:
@@ -56,7 +57,8 @@ class BusStateTest(unittest.TestCase):
         env = simpy.Environment()
         bs = BusState(env, 5)
 
-        messages = [TransmittedMessage('Message{}'.format(i), 1000) for i in range(5)]
+        messages = [TransmittedMessage('Message{}'.format(i), 1000)
+                    for i in range(5)]
         received_messages = []
 
         for i, msg in enumerate(messages):
