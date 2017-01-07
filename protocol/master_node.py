@@ -163,7 +163,7 @@ class MasterNode(ReThunderNode):
                     ancestor_of_previous
                 )
 
-    def send_message_proc(self, message, message_length, dest_static_addr):
+    def send_message(self, message, message_length, dest_static_addr):
         self._send_store.put((message, message_length, dest_static_addr))
 
     @run_process

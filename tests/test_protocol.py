@@ -36,7 +36,7 @@ class TestProtocol(unittest.TestCase):
         network.netgraph.add_path((master, bus, slave))
 
         network.run_nodes_processes()
-        master.send_message_proc(msg, len(msg), slave.static_address)
+        master.send_message(msg, len(msg), slave.static_address)
         network.env.run()
 
         self.assertEqual(received, [ans])
@@ -61,7 +61,7 @@ class TestProtocol(unittest.TestCase):
         master.init_from_static_addr_graph(nx.star_graph(3))
         network.run_nodes_processes()
 
-        master.send_message_proc(msg, 4, dest_static_addr=1)
-        master.send_message_proc(msg, 4, dest_static_addr=2)
+        master.send_message(msg, 4, dest_static_addr=1)
+        master.send_message(msg, 4, dest_static_addr=2)
         network.env.run()
 
