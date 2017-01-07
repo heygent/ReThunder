@@ -44,24 +44,63 @@ class TestProtocol(unittest.TestCase):
     def test_many_slaves(self):
 
         network = self.network
-        master = MasterNode(network)
         bus = Bus(network, 20)
+        received = []
+        master = MasterNode(
+            network, on_message_received=lambda _, m, __: received.append(m)
+        )
 
         msg = "Blip"
-        ans = "Blop"
+        ans = "Blop_{0}"
+
+        def slave_on_received(slave, msg, msg_len):
+            res = ans.format(slave.static_address)
+            return res, len(res)
 
         slaves = [
-            SlaveNode(network, i, on_message_received=lambda x, y, z: (ans, 4))
-            for i in range(1, 3)
+            SlaveNode(network, i, on_message_received=slave_on_received)
+            for i in range(1, 51)
         ]
 
         for node in (master, *slaves):
             network.netgraph.add_edge(bus, node)
 
-        master.init_from_static_addr_graph(nx.star_graph(3))
+        master.init_from_static_addr_graph(nx.star_graph(50))
         network.run_nodes_processes()
 
-        master.send_message(msg, 4, dest_static_addr=1)
-        master.send_message(msg, 4, dest_static_addr=2)
+        for addr in range(1, 51):
+            master.send_message(msg, 4, addr)
+
         network.env.run()
 
+        self.assertEquals(received, [ans.format(addr)
+                                     for addr in range(1, 51)])
+
+    def test_line(self):
+
+        network = self.network
+        received = []
+        master = MasterNode(
+            network, on_message_received=lambda _, m, __: received.append(m)
+        )
+
+        msg = "Blip"
+        ans = "Blop_{0}"
+
+        def slave_on_received(slave, msg, msg_len):
+            res = ans.format(slave.static_address)
+            return res, len(res)
+
+        slaves = [SlaveNode(network, i, on_message_received=slave_on_received)
+                  for i in range(1, 21)]
+
+        for n1, n2 in zip((master, *slaves), slaves):
+            bus = Bus(network, 10)
+            network.netgraph.add_path((n1, bus, n2))
+
+        master.init_from_static_addr_graph(nx.path_graph(21))
+        network.run_nodes_processes()
+        master.send_message(msg, len(msg), 20)
+        network.env.run()
+
+        self.assertEquals(received, ["Blop_20"])
