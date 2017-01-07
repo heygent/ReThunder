@@ -131,7 +131,7 @@ class SlaveNode(ReThunderNode):
         response.token = packet.token
 
         response.noise_tables.append(copy(self.noise_table))
-        self.last_sent_routing_table = self.routing_table
+        self.last_sent_routing_table = copy(self.routing_table)
 
         response.payload, response.payload_length = self.on_message_received(
             self, packet.payload, packet.payload_length
