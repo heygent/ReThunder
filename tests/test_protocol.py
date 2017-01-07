@@ -11,42 +11,57 @@ import logging
 
 class TestProtocol(unittest.TestCase):
 
-    def master_on_received(self, node, msg, msg_len):
-        self.received_by_master.append((self.env.now, msg))
-
     def setUp(self):
-
-        self.network = network = Network()
-        self.env = network.env
-        self.master = MasterNode(network, self.master_on_received)
-        self.received_by_master = []
-        self.master_bus = Bus(network, 20)
-        network.netgraph.add_edge(self.master, self.master_bus)
+        self.network = network = Network(transmission_speed=0.5)
+        network.configure_root_logger(level=logging.DEBUG)
 
     def test_one_slave(self):
 
         network = self.network
-        master = self.master
-        master_bus = self.master_bus
+        received = []
+
+        master = MasterNode(
+            network, on_message_received=lambda _, m, __: received.append(m)
+        )
+
+        bus = Bus(network, 20)
 
         msg = "Hallo, brothers and sistas!"
         ans = "Hallo to you, sir!"
 
-        slave = SlaveNode(self.network, 1,
+        slave = SlaveNode(network, 1,
                           on_message_received=lambda x, y, z: (ans, len(ans)))
 
         master.init_from_static_addr_graph(nx.path_graph(2))
-        network.netgraph.add_edge(master_bus, slave)
-
-        logging.basicConfig(level=logging.DEBUG)
-
-        for handler in logging.getLogger().handlers:
-            network.configure_log_handler(handler)
+        network.netgraph.add_path((master, bus, slave))
 
         network.run_nodes_processes()
-        network.env.run()
         master.send_message_proc(msg, len(msg), slave.static_address)
         network.env.run()
 
-        received = self.received_by_master
-        pass
+        self.assertEqual(received, [ans])
+
+    def test_many_slaves(self):
+
+        network = self.network
+        master = MasterNode(network)
+        bus = Bus(network, 20)
+
+        msg = "Blip"
+        ans = "Blop"
+
+        slaves = [
+            SlaveNode(network, i, on_message_received=lambda x, y, z: (ans, 4))
+            for i in range(1, 3)
+        ]
+
+        for node in (master, *slaves):
+            network.netgraph.add_edge(bus, node)
+
+        master.init_from_static_addr_graph(nx.star_graph(3))
+        network.run_nodes_processes()
+
+        master.send_message_proc(msg, 4, dest_static_addr=1)
+        master.send_message_proc(msg, 4, dest_static_addr=2)
+        network.env.run()
+
