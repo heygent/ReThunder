@@ -68,8 +68,6 @@ class ReThunderNode(NetworkNode):
             if not received_packet.is_readable():
                 continue
 
-            logger.debug(f'{self} received a packet.')
-
             return received_packet
 
     def _send_and_acknowledge(self, to_send: Packet):
