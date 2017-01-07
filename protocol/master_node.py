@@ -257,13 +257,14 @@ class MasterNode(ReThunderNode):
     @_handle_received.register(ResponsePacket)
     def _(self, packet):
 
-        answer_pending = self._answer_pending
+        pending = self._answer_pending
 
-        if answer_pending.token != packet.token:
+        tok = None if pending is None else pending.token
+
+        if tok != packet.token:
             logger.warning(
                 f'{self} has received an answer with token '
-                f'{packet.token}. Current token is {answer_pending.token}, '
-                'ignoring'
+                f'{packet.token}. Current token is {tok}, ignoring'
             )
             return
 
