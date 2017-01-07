@@ -32,7 +32,7 @@ class BusyError(Exception):
 
 class MasterNode(ReThunderNode):
 
-    def __init__(self, network, on_message_received):
+    def __init__(self, network, on_message_received=None):
 
         super().__init__(network, 0, 0)
 
@@ -273,7 +273,9 @@ class MasterNode(ReThunderNode):
         self._update_sptree()
         self._readdress_nodes()
 
-        self.on_message_received(self, packet.payload, packet.payload_length)
+        msg_callback = self.on_message_received or (lambda x, y, z: None)
+        msg_callback(self, packet.payload, packet.payload_length)
+
         self._answer_pending = None
 
     def _make_request_packet(self, message, length, path_to_dest):
