@@ -174,6 +174,8 @@ class MasterNode(ReThunderNode):
         env = self.env
         send_ev = recv_ev = None
 
+        logger.info(f"{self} started.")
+
         while True:
 
             send_ev = send_ev or self._send_store.get()
@@ -207,6 +209,8 @@ class MasterNode(ReThunderNode):
         path_to_dest = self._shortest_paths[dest]
 
         packet = self._make_request_packet(msg, msg_len, path_to_dest)
+
+        logger.info(f"Master sends request with token {packet.token}")
 
         yield self._send_to_network_proc(
             packet, packet.number_of_frames()
