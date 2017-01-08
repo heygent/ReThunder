@@ -34,7 +34,6 @@ class Packet(metaclass=abc.ABCMeta):
     def __init__(self):
 
         self.code_is_node_init = False
-        self.code_destination_is_endpoint = False
         self.code_is_addressing_static = False
 
         self.__frame_errors = defaultdict(int)
@@ -142,7 +141,6 @@ class AckPacket(PacketWithNextHop):
 
         if of is not None:
 
-            self.code_destination_is_endpoint = of.code_destination_is_endpoint
             self.code_is_addressing_static = of.code_is_addressing_static
             self.code_is_node_init = of.code_is_node_init
             self.token = of.token
