@@ -51,8 +51,8 @@ class MasterNode(ReThunderNode):
                            **kwargs):
 
         addr_graph = bipartite.projected_graph(
-            netgraph, (node for node in netgraph.nodes_iter()
-                       if isinstance(node, ReThunderNode))
+            netgraph, [node for node in netgraph.nodes_iter()
+                       if isinstance(node, ReThunderNode)]
         )
 
         # noinspection PyTypeChecker
