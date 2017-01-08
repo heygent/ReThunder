@@ -24,9 +24,6 @@ AnswerPendingRecord = collections.namedtuple(
 )
 
 
-class BusyError(Exception):
-    pass
-
 
 class MasterNode(ReThunderNode):
 
