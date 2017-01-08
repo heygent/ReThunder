@@ -203,8 +203,9 @@ class RequestPacket(CommunicationPacket):
     def _frame_increment(self):
 
         frames = self.__STATIC_FRAMES
-        path_len = len(self.path)
-        frames += path_len + bitmap_frame_count(path_len)
+        path_len = len(self.path or ())
+        if path_len > 0:
+            frames += path_len + bitmap_frame_count(path_len) + 1
         frames += len(self.new_logic_addresses) * 2
 
         return frames
