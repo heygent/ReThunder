@@ -197,7 +197,7 @@ class RequestPacket(CommunicationPacket):
         self.new_logic_addresses: Dict[int, int] = None
 
     def __repr__(self):
-        return f'<RequestPacket source={self.source_static}' \
+        return f'<RequestPacket source={self.source_static} ' \
                f'next_hop={self.next_hop}>'
 
     def _frame_increment(self):
