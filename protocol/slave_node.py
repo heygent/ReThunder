@@ -37,7 +37,6 @@ class SlaveNode(ReThunderNode):
         while not self.run_until():
 
             received = yield self._receive_packet_proc()  # type: Packet
-            logger.info(f"{self} received {received}")
             response = self._handle_received(received)  # type: Packet
 
             if response is not None:
@@ -65,6 +64,7 @@ class SlaveNode(ReThunderNode):
         if packet.next_hop != self.static_address:
             return None
 
+        logger.info(f"{self} received {packet}")
         self._previous_node_static_addr = packet.source_static
 
         new_logic_addr = packet.new_logic_addresses.pop(self.static_address,
@@ -111,6 +111,7 @@ class SlaveNode(ReThunderNode):
 
         if packet.next_hop != self.static_address:
             return None
+        logger.info(f"{self} received {packet}")
 
         if self._previous_node_static_addr is None:
             logger.warning(
