@@ -20,9 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 AnswerPendingRecord = collections.namedtuple(
-    'AnswerPendingRecord', 'token, path, send_time, expiry_delay'
+    'AnswerPendingRecord',
+    'token, path, new_addrs_table, send_time, expiry_delay'
 )
 
+AnswerPendingRecord.expiry_time = property(
+    lambda self: self.send_time + self.expiry_delay
+)
 
 
 class MasterNode(ReThunderNode):
@@ -215,12 +219,14 @@ class MasterNode(ReThunderNode):
             + 50
         )
 
-        return AnswerPendingRecord(packet.token, path_to_dest, env.now,
-                                   estimated_rtt)
+        return AnswerPendingRecord(
+            packet.token, path_to_dest, packet.new_logic_addresses,
+            self.env.now, estimated_rtt
+        )
 
     def _wait_for_answer(self):
-        answer_pending: AnswerPendingRecord = self._answer_pending
-        to = self.env.timeout(answer_pending.expiry_delay)
+        pending: AnswerPendingRecord = self._answer_pending
+        to = self.env.timeout(pending.expiry_delay)
         recv_ev = None
 
         while True:
@@ -228,6 +234,8 @@ class MasterNode(ReThunderNode):
             received = yield recv_ev
 
             if received is self.timeout_sentinel:
+                logger.info(f"Timeout for answer with token {pending.token}")
+                self._unset_ambiguous_addresses(pending.new_addrs_table)
                 break
             else:
                 self._handle_received(received)
@@ -356,6 +364,13 @@ class MasterNode(ReThunderNode):
 
         return packet
 
+    def _unset_ambiguous_addresses(self, new_addrs_table):
+
+        nodes = self._node_manager
+
+        for static_addr in new_addrs_table.keys():
+            nodes[static_addr].current_logic_address = None
+
     def _update_node_graph(self, packet: ResponsePacket):
 
         node_graph = self.node_graph
@@ -376,6 +391,4 @@ class MasterNode(ReThunderNode):
     def _waiting_for_answer(self):
         pending: AnswerPendingRecord = self._answer_pending
 
-        return pending is not None and (
-            pending.send_time + pending.expiry_delay
-        ) >= self.env.now
+        return pending is not None and pending.expiry_time >= self.env.now
