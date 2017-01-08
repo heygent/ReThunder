@@ -21,7 +21,6 @@ class SlaveNode(ReThunderNode):
 
         self.last_sent_routing_table = {}
         self._previous_node_static_addr = None
-        self._ack_pending_token = None
 
         self.run_until = lambda: False
         self.on_message_received = on_message_received or (lambda x, y, z: None)
