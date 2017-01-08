@@ -1,7 +1,7 @@
+import abc
 from typing import Any, List, Optional
 
 import simpy
-import abc
 
 from utils.run_process_decorator import run_process
 

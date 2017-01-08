@@ -1,7 +1,5 @@
 import unittest
 
-import simpy
-
 from infrastructure.bus import Bus
 from infrastructure.message import CollisionSentinel
 from infrastructure.network import Network

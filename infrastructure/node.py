@@ -1,5 +1,5 @@
-import weakref
 import logging
+import weakref
 from typing import Any
 
 import simpy
@@ -7,7 +7,6 @@ import simpy
 from utils.condition_var import ConditionVar, BroadcastConditionVar
 from utils.run_process_decorator import run_process
 from utils.updatable_process import UpdatableProcess
-
 from .message import (
     TransmittedMessage, CollisionSentinel, make_transmission_delay
 )

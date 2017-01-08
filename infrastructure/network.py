@@ -1,6 +1,7 @@
 import logging
-import simpy
+
 import networkx as nx
+import simpy
 
 
 class Network:

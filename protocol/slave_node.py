@@ -3,7 +3,7 @@ from copy import copy
 from typing import Optional
 
 from protocol.packet import (
-    Packet, RequestPacket, ResponsePacket, PacketWithSource, AddressType
+    Packet, RequestPacket, ResponsePacket, AddressType
 )
 from protocol.rethunder_node import ReThunderNode
 from utils.func import singledispatchmethod

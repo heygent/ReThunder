@@ -1,8 +1,8 @@
+import itertools
+import random
 import unittest
 
-import itertools
 import networkx as nx
-import random
 
 from infrastructure import Network
 from protocol import MasterNode

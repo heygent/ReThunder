@@ -1,3 +1,4 @@
+import logging
 import unittest
 
 import networkx as nx
@@ -6,7 +7,6 @@ from infrastructure import Bus
 from infrastructure import Network
 from protocol import MasterNode
 from protocol import SlaveNode
-import logging
 
 
 class TestProtocol(unittest.TestCase):

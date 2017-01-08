@@ -1,5 +1,6 @@
-import networkx as nx
 from typing import List, Dict, Any
+
+import networkx as nx
 
 
 # noinspection PyPep8Naming
