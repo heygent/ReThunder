@@ -75,8 +75,18 @@ class SlaveNode(ReThunderNode):
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
 
-        if not self._is_destination_of(packet):
+        if self._is_destination_of(packet):
 
+            if len(packet.path) == 0:
+                return self._make_response_packet(packet)
+
+            dest_type, dest = packet.path.pop()
+            packet.destination = dest
+            packet.code_is_addressing_static = dest_type is AddressType.static
+
+        if packet.code_is_addressing_static:
+            packet.next_hop = packet.destination
+        else:
             routing_table = self.last_sent_routing_table
 
             next_logic_hop = max(
@@ -87,18 +97,7 @@ class SlaveNode(ReThunderNode):
 
             packet.next_hop = routing_table[next_logic_hop]
 
-            return packet
-
-        elif not packet.code_destination_is_endpoint:
-
-            dest_type, dest = packet.path.pop()
-            packet.destination = dest
-            packet.code_is_addressing_static = dest_type is AddressType.static
-
-            return packet
-
-        else:
-            return self._make_response_packet(packet)
+        return packet
 
     @_handle_received.register(ResponsePacket)
     def _response_packet_received(self, packet):
