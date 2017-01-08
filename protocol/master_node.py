@@ -357,8 +357,6 @@ class MasterNode(ReThunderNode):
         next_hop = path_to_dest[1]
         packet.next_hop = next_hop.static_address
 
-        packet.code_destination_is_endpoint = len(path) == 0
-
         packet.payload = message
         packet.payload_length = length
 
