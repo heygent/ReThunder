@@ -32,8 +32,8 @@ class TestProtocol(unittest.TestCase):
         slave = SlaveNode(network, 1,
                           on_message_received=lambda x, y, z: (ans, len(ans)))
 
-        master.init_from_static_addr_graph(nx.path_graph(2))
         network.netgraph.add_path((master, bus, slave))
+        master.init_from_netgraph(network.netgraph)
 
         network.run_nodes_processes()
         master.send_message(msg, len(msg), slave.static_address)
@@ -65,7 +65,7 @@ class TestProtocol(unittest.TestCase):
         for node in (master, *slaves):
             network.netgraph.add_edge(bus, node)
 
-        master.init_from_static_addr_graph(nx.star_graph(50))
+        master.init_from_netgraph(network.netgraph)
         network.run_nodes_processes()
 
         for addr in range(1, 51):
@@ -94,13 +94,39 @@ class TestProtocol(unittest.TestCase):
         slaves = [SlaveNode(network, i, on_message_received=slave_on_received)
                   for i in range(1, 21)]
 
-        for n1, n2 in zip((master, *slaves), slaves):
-            bus = Bus(network, 10)
-            network.netgraph.add_path((n1, bus, n2))
-
-        master.init_from_static_addr_graph(nx.path_graph(21))
+        network.netgraph.add_path((master, *slaves), propagation_delay=20)
+        network.make_buses()
+        master.init_from_netgraph(network.netgraph)
         network.run_nodes_processes()
-        master.send_message(msg, len(msg), 20)
+
+        for addr in range(15, 21):
+            master.send_message(msg, len(msg), addr)
+
         network.env.run()
 
-        self.assertEquals(received, ["Blop_20"])
+        self.assertEquals(received, [ans.format(i) for i in range(15, 21)])
+
+    def test_tree(self):
+        network = self.network
+
+        network = self.network
+        received = []
+        master = MasterNode(
+            network, on_message_received=lambda _, m, __: received.append(m)
+        )
+
+        msg = "Blip"
+        ans = "Blop_{0}"
+
+        def slave_on_received(slave, msg, msg_len):
+            res = ans.format(slave.static_address)
+            return res, len(res)
+
+        slaves = [SlaveNode(network, i, on_message_received=slave_on_received)
+                  for i in range(1, 19)]
+
+        buses = [Bus(network, 10) for _ in range(2)]
+
+        for bus, n1, n2 in zip(buses, slaves, slaves[1:]):
+            network.netgraph.add_star((bus, n1, n2))
+
