@@ -70,15 +70,14 @@ class MasterNode(ReThunderNode):
 
         nodes = self._node_manager
 
-        # nx.relabel_nodes accepts a function for relabeling nodes.
-        # It is poorly documented though, to the point that the type checker
-        # fires warnings if you do.
+        mappings = {addr: nodes.create(addr)
+                    for addr in sorted(addr_graph.nodes())}
 
         # noinspection PyTypeChecker
-        node_graph = nx.relabel_nodes(addr_graph, nodes.create, copy=True)
+        node_graph = nx.relabel_nodes(addr_graph, mappings, copy=True)
 
-        # Same here. Normally set_edge_attributes takes a dict as its last
-        # argument, but other types are supported (see networkx doc).
+        # Normally set_edge_attributes takes a dict as its last argument,
+        # but other types are supported (see networkx doc).
 
         # noinspection PyTypeChecker
         nx.set_edge_attributes(node_graph, 'noise', initial_noise_value)
