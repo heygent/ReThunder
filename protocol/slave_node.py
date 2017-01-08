@@ -67,7 +67,8 @@ class SlaveNode(ReThunderNode):
 
         self._previous_node_static_addr = packet.source_static
 
-        new_logic_addr = packet.new_logic_addresses.get(self.static_address)
+        new_logic_addr = packet.new_logic_addresses.pop(self.static_address,
+                                                        None)
 
         if new_logic_addr is not None:
             self.logic_address = new_logic_addr
