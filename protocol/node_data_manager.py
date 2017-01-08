@@ -16,11 +16,11 @@ class NodeDataManager(collections.Mapping):
 
             node_manager = weakref.proxy(node_manager)  # type: NodeDataManager
 
-            self.__node_manager = node_manager
-            self.__static_address = (
+            self._node_manager = node_manager
+            self._static_address = (
                 static_address or node_manager.get_free_static_address()
             )
-            self.__logic_address = None
+            self._logic_address = None
             self.logic_address = logic_address
             self.current_logic_address = None
 
@@ -28,24 +28,24 @@ class NodeDataManager(collections.Mapping):
 
         @property
         def static_address(self):
-            return self.__static_address
+            return self._static_address
 
         @property
         def logic_address(self):
-            return self.__logic_address
+            return self._logic_address
 
         @logic_address.setter
         def logic_address(self, logic_addr):
-            self.__node_manager._map_to_logic(self, logic_addr)
-            self.__logic_address = logic_addr
+            self._node_manager._map_to_logic(self, logic_addr)
+            self._logic_address = logic_addr
 
         def swap_logic_address(self, other):
 
-            self.__logic_address, other.__logic_address = (
-                other.__logic_address, self.__logic_address
+            self._logic_address, other._logic_address = (
+                other._logic_address, self._logic_address
             )
-            self.__node_manager._swap_logic_mappings(
-                self.__logic_address, other.__logic_address
+            self._node_manager._swap_logic_mappings(
+                self._logic_address, other._logic_address
             )
 
         def __eq__(self, other):
@@ -65,35 +65,35 @@ class NodeDataManager(collections.Mapping):
             )
 
     def __init__(self):
-        self.__static_to_node = SortedDict()
-        self.__logic_to_node = SortedDict()
+        self._static_to_node = SortedDict()
+        self._logic_to_node = SortedDict()
 
     def __len__(self):
-        return len(self.__static_to_node)
+        return len(self._static_to_node)
 
     def __iter__(self):
-        return iter(self.__static_to_node)
+        return iter(self._static_to_node)
 
     def __getitem__(self, item: int) -> NodeData:
-        return self.__static_to_node[item]
+        return self._static_to_node[item]
 
     def __delitem__(self, key):
 
-        node = self.__static_to_node[key]
-        del self.__static_to_node[key]
+        node = self._static_to_node[key]
+        del self._static_to_node[key]
 
         if node.logic_address not in self.FLAG_VALUES:
-            del self.__logic_to_node[node.logic_address]
+            del self._logic_to_node[node.logic_address]
 
     def from_logic_address(self, addr: int) -> NodeData:
-        return self.__logic_to_node[addr]
+        return self._logic_to_node[addr]
 
     def logic_addresses_view(self):
-        return self.__logic_to_node.keys()
+        return self._logic_to_node.keys()
 
     def _map_to_logic(self, node: NodeData, new_logic_address):
 
-        logic_to_node = self.__logic_to_node
+        logic_to_node = self._logic_to_node
 
         invalid = node.logic_address in self.FLAG_VALUES
         delete = new_logic_address in self.FLAG_VALUES
@@ -106,24 +106,24 @@ class NodeDataManager(collections.Mapping):
             raise ValueError('The logic address is already assigned.')
 
     def _swap_logic_mappings(self, addr1, addr2):
-        logic_to_node = self.__logic_to_node
+        logic_to_node = self._logic_to_node
 
         logic_to_node[addr1], logic_to_node[addr2] = (
             logic_to_node[addr2], logic_to_node[addr1]
         )
 
     def _on_create(self, node):
-        if self.__static_to_node.get(node.static_address) is None:
-            self.__static_to_node[node.static_address] = node
+        if self._static_to_node.get(node.static_address) is None:
+            self._static_to_node[node.static_address] = node
         else:
-            raise ValueError('A node with the same static address already '
-                             'exists.')
+            raise ValueError('A node with static address {} already '
+                             'exists.'.format(node.static_address))
 
     def create(self, static_address=None, logic_address=None):
         return self.NodeData(self, static_address, logic_address)
 
     @classmethod
-    def __get_free_address(cls, mydict: SortedDict):
+    def _get_free_address(cls, mydict: SortedDict):
         free_index = mydict.bisect_right(1)
 
         if free_index > cls.MAX_ADDRESS:
@@ -132,9 +132,9 @@ class NodeDataManager(collections.Mapping):
         return free_index
 
     def get_free_static_address(self) -> int:
-        return self.__get_free_address(self.__static_to_node)
+        return self._get_free_address(self._static_to_node)
 
     def get_free_logic_address(self) -> int:
-        return self.__get_free_address(self.__logic_to_node)
+        return self._get_free_address(self._logic_to_node)
 
 NodeDataT = NodeDataManager.NodeData
