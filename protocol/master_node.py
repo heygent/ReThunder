@@ -190,19 +190,19 @@ class MasterNode(ReThunderNode):
 
             assert any(e.processed for e in events), "Spurious wake"
 
+            if recv_ev.processed:
+                self._handle_received(recv_ev.value)
+                recv_ev = None
+
             if send_ev.processed:
                 self._answer_pending = yield from self._handle_send_request(
                     send_ev.value
                 )
                 yield from self._wait_for_answer()
                 send_ev = None
-
-            elif recv_ev.processed:
-                self._handle_received(recv_ev.value)
                 recv_ev = None
 
     def _handle_send_request(self, msg_data):
-        env = self.env
 
         msg, msg_len, dest_addr = msg_data
         dest = self._node_manager[dest_addr]
