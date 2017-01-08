@@ -1,7 +1,10 @@
 import logging
+from typing import Dict
 
 import networkx as nx
 import simpy
+
+from infrastructure import Bus
 
 
 class Network:
@@ -40,3 +43,14 @@ class Network:
 
         for handler in logging.getLogger().handlers:
             self.configure_log_handler(handler)
+
+    def make_buses(self):
+
+        netgraph = self.netgraph
+        nodegraph_edges = netgraph.edges(data=True)
+        netgraph.clear()
+
+        for n1, n2, data in nodegraph_edges:
+            prop_delay = data.get('propagation_delay', 10)
+            bus = Bus(self, prop_delay)
+            netgraph.add_star((bus, n1, n2))
