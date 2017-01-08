@@ -380,13 +380,13 @@ class MasterNode(ReThunderNode):
         for node in message_path:
             node.current_logic_address = node.logic_address
 
-        for source_node, noise_table in zip(reversed(message_path),
-                                            packet.noise_tables):
+        for source_node, noise_table in zip(message_path[1:],
+                                            reversed(packet.noise_tables)):
 
-            for dest_node_addr, noise_level in noise_table.items():
-
+            for dest_node_addr, noise in noise_table.items():
                 dest_node = nodes[dest_node_addr]
-                node_graph[source_node][dest_node]['noise'] = noise_level
+
+                node_graph.add_edge(source_node, dest_node, {'noise': noise})
 
     def _waiting_for_answer(self):
         pending: AnswerPendingRecord = self._answer_pending
