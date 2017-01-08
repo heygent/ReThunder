@@ -32,9 +32,12 @@ class SlaveNode(ReThunderNode):
     @run_process
     def run_proc(self):
 
+        logger.info(f"{self} started.")
+
         while not self.run_until():
 
             received = yield self._receive_packet_proc()  # type: Packet
+            logger.info(f"{self} received {received}")
             response = self._handle_received(received)  # type: Packet
 
             if response is not None:
