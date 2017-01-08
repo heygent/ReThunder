@@ -92,11 +92,17 @@ class SlaveNode(ReThunderNode):
 
             next_logic_hop = max(
                 (addr for addr in routing_table.keys()
-                 if addr < packet.destination),
-                self.logic_address
+                 if addr <= packet.destination),
+                default=None
             )
 
+            if next_logic_hop is None or next_logic_hop <= self.logic_address:
+                logger.warning(f"{self} couldn't complete the addressing.")
+                return
+
             packet.next_hop = routing_table[next_logic_hop]
+            logger.debug(f"{self} dynamically addressed to node "
+                         f"{packet.next_hop}")
 
         return packet
 
@@ -119,6 +125,7 @@ class SlaveNode(ReThunderNode):
         packet.next_hop = self._previous_node_static_addr
 
         packet.noise_tables.append(self.noise_table)
+        self.last_sent_routing_table = copy(self.routing_table)
 
         return packet
 
@@ -130,7 +137,7 @@ class SlaveNode(ReThunderNode):
 
         response.source_static = self.static_address
         response.source_logic = self.logic_address
-        response.next_hop = packet.source_static
+        response.next_hop = self._previous_node_static_addr
         response.token = packet.token
 
         response.noise_tables.append(copy(self.noise_table))
