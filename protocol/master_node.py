@@ -97,6 +97,13 @@ class MasterNode(ReThunderNode):
 
         preorder_tree_dfs(self._sptree, nodes[0], action=assign_logic_address)
 
+    def _update_noise_table(self, packet: Packet):
+        super()._update_noise_table(packet)
+        self._update_node_graph_from_table(self._node_manager[0],
+                                           self.noise_table)
+        self._update_sptree()
+        self._readdress_nodes()
+
     def _update_sptree(self):
         nodes = self._node_manager
 
