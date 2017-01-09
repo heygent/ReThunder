@@ -319,7 +319,8 @@ class MasterNode(ReThunderNode):
             neighbors = node_graph.neighbors(node)
 
             max_address = max(c.current_logic_address for c in neighbors
-                              if c.current_logic_address <= destination_addr)
+                              if c.current_logic_address is not None
+                              and c.current_logic_address <= destination_addr)
 
             wrong_addressing = max_address != next_node.current_logic_address
 
