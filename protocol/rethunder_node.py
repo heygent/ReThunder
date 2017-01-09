@@ -37,7 +37,7 @@ class ReThunderNode(NetworkNode):
     def _update_routing_table(self, packet: Packet):
 
         if isinstance(packet, PacketWithSource):
-            self.routing_table[packet.source_static] = packet.source_logic
+            self.routing_table[packet.source_logic] = packet.source_static
 
     @run_process
     def _receive_packet_proc(self, timeout=None):
