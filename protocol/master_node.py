@@ -276,7 +276,7 @@ class MasterNode(ReThunderNode):
 
         logger.debug(f"{self} received answer to token {packet.token}")
 
-        self._update_node_graph(packet)
+        self._update_node_graph_from_packet(packet)
         self._update_sptree()
         self._readdress_nodes()
 
@@ -372,22 +372,24 @@ class MasterNode(ReThunderNode):
         for static_addr in new_addrs_table.keys():
             nodes[static_addr].current_logic_address = None
 
-    def _update_node_graph(self, packet: ResponsePacket):
+    def _update_node_graph_from_packet(self, packet: ResponsePacket):
 
-        node_graph = self.node_graph
-        nodes = self._node_manager
         message_path = self._answer_pending.path
 
-        for node in message_path:
+        for node in message_path[1:]:
             node.current_logic_address = node.logic_address
 
         for source_node, noise_table in zip(message_path[1:],
                                             reversed(packet.noise_tables)):
 
-            for dest_node_addr, noise in noise_table.items():
-                dest_node = nodes[dest_node_addr]
+            self._update_node_graph_from_table(source_node, noise_table)
 
-                node_graph.add_edge(source_node, dest_node, {'noise': noise})
+    def _update_node_graph_from_table(self, source, table):
+
+        self.node_graph.add_edges_from(
+            (source, self._node_manager[addr], {'noise': noise})
+            for addr, noise in table.items()
+        )
 
     def _waiting_for_answer(self):
         pending: AnswerPendingRecord = self._answer_pending
