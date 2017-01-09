@@ -211,7 +211,13 @@ class MasterNode(ReThunderNode):
     def _handle_send_request(self, msg_data):
 
         msg, msg_len, dest_addr = msg_data
-        dest = self._node_manager[dest_addr]
+
+        try:
+            dest = self._node_manager[dest_addr]
+        except KeyError:
+            raise ValueError(f"{self} is not aware of a node with address "
+                             f"{dest_addr}")
+
         path_to_dest = self._shortest_paths[dest]
 
         packet = self._make_request_packet(msg, msg_len, path_to_dest)
