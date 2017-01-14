@@ -36,6 +36,9 @@ class Bus:
         if self._message_in_transmission is None:
             self._message_in_transmission = message
         else:
+            logger.warning(f"{self}: A collision has happened between "
+                           f"{message} and {self._message_in_transmission}")
+
             self._message_in_transmission = TransmittedMessage(
                 CollisionSentinel,
                 max(message.transmission_delay,
