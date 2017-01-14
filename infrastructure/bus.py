@@ -25,6 +25,9 @@ class Bus:
 
         netgraph.add_node(self)
 
+    def __str__(self):
+        return "<Bus>"
+
     @run_process
     def send_to_bus_proc(self, message):
 
