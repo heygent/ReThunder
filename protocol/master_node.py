@@ -271,7 +271,7 @@ class MasterNode(ReThunderNode):
 
     @_handle_received.register(RequestPacket)
     def _(self, _):
-        logger.warning(f'{self} received a RequestPacket.')
+        logger.info(f'{self} received a RequestPacket.')
 
     @_handle_received.register(ResponsePacket)
     def _(self, packet):
