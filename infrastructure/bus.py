@@ -30,19 +30,26 @@ class Bus:
 
         env = self.env
 
-        with self._network_res.request(True) as req:
-            yield req
-            if self._message_in_transmission is None:
-                self._message_in_transmission = message
-            else:
-                # todo collisione
-                self._message_in_transmission = message
+        if self._message_in_transmission is None:
+            self._message_in_transmission = message
+        else:
+            self._message_in_transmission = TransmittedMessage(
+                CollisionSentinel,
+                max(message.transmission_delay,
+                    self._message_in_transmission.transmission_delay),
+                None
+            )
+
+        with self._network_res.request(preempt=True) as req:
             try:
+                yield req
                 yield env.timeout(self._propagation_delay)
+
+                message = self._message_in_transmission
+                self._message_in_transmission = None
+
             except simpy.Interrupt:
                 return
-
-        message = self._message_in_transmission
 
         for node in self._netgraph.neighbors(self):
             if node is not message.sender:
