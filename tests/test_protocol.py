@@ -152,6 +152,7 @@ class TestAddedCycle(unittest.TestCase):
 
         self.assertEquals(self.received, [ans.format(2)] * 2)
 
+
 class TestTreeConfiguration(unittest.TestCase):
 
     def setUp(self):
