@@ -5,6 +5,7 @@ import unittest
 from itertools import combinations
 import networkx as nx
 
+import protocol
 from infrastructure import Bus
 from infrastructure import Network
 from protocol import MasterNode
@@ -108,6 +109,48 @@ class SimpleTestProtocol(unittest.TestCase):
 
         self.assertEquals(received, [ans.format(i) for i in range(15, 21)])
 
+
+class TestAddedCycle(unittest.TestCase):
+    def setUp(self):
+        self.network = network = Network(transmission_speed=0.5)
+        network.configure_root_logger(level=logging.DEBUG)
+
+        self.received = received = []
+        self.msg = msg = "Blip"
+        self.ans = ans = "Blop_{0}"
+
+        def slave_on_received(slave, msg, msg_len):
+            res = ans.format(slave.static_address)
+            return res, len(res)
+
+        self.nodes = nodes = protocol.make_nodes(
+            network, 3, lambda _, m, __: received.append(m), slave_on_received
+        )
+
+        network.netgraph.add_path(nodes)
+        network.make_buses()
+        nodes[0].init_from_netgraph(network.netgraph)
+        network.run_nodes_processes()
+
+    def test_dynamically_added_cycle(self):
+
+        network = self.network
+        nodes = self.nodes
+        last_addr = len(nodes) - 1
+        msg = self.msg
+        ans = self.ans
+
+        nodes[0].send_message(msg, len(msg), 2)
+        network.env.run()
+
+        network.netgraph.add_star((
+            Bus(network, 10), nodes[0], nodes[2]
+        ))
+
+        nodes[0].send_message(msg, len(msg), 2)
+        network.env.run()
+
+        self.assertEquals(self.received, [ans.format(2)] * 2)
 
 class TestTreeConfiguration(unittest.TestCase):
 
