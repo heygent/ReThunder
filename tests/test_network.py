@@ -51,5 +51,5 @@ class TestNetwork(unittest.TestCase):
         network.env.run()
 
         self.assertEqual(receiver.received,
-                         [(4 + 4 * i, CollisionSentinel)
+                         [(8 * i, CollisionSentinel)
                           for i, (msg, _) in enumerate(messages, start=1)])
