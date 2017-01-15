@@ -98,7 +98,7 @@ class SimpleTestProtocol(unittest.TestCase):
                   for i in range(1, 21)]
 
         network.netgraph.add_path((master, *slaves), propagation_delay=20)
-        network.make_buses()
+        # network.make_buses()
         master.init_from_netgraph(network.netgraph)
         network.run_nodes_processes()
 
@@ -190,7 +190,7 @@ class TestTreeConfiguration(unittest.TestCase):
         network.netgraph.add_edge(nodes[4], nodes[10])
         network.netgraph.add_edge(nodes[5], nodes[14])
 
-        network.make_buses()
+        # network.make_buses()
 
     def test_1(self):
 
@@ -244,7 +244,8 @@ class TestTreeConfiguration(unittest.TestCase):
         msg = self.msg
         ans = self.ans
 
-        network.netgraph.add_star((Bus(network, 10), nodes[0], nodes[12]))
+        # network.netgraph.add_star((Bus(network, 10), nodes[0], nodes[12]))
+        network.netgraph.add_edge(nodes[0], nodes[12])
 
         nodes[0].init_from_netgraph(network.netgraph)
         network.run_nodes_processes()
@@ -255,5 +256,7 @@ class TestTreeConfiguration(unittest.TestCase):
 
         network.env.run()
 
+        self.assertEquals(nodes[0].sent_messagges,
+                          [msg] * 2 * (len(nodes) - 1))
         self.assertEquals(self.received,
                           [ans.format(i) for i in range(last_addr, 0, -1)] * 2)
