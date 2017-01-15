@@ -12,7 +12,7 @@ def as_generator(fn):
     return wrapper
 
 
-def run_process(process_fn, env_attr='env'):
+def simpy_process(process_fn, env_attr='env'):
 
     @wraps(process_fn)
     def wrapper(self, *args):
@@ -21,6 +21,6 @@ def run_process(process_fn, env_attr='env'):
     return wrapper
 
 
-def run_process_with_env(env_attr: str):
-    return lambda fn: run_process(fn, env_attr)
+def simpy_process_with_env(env_attr: str):
+    return lambda fn: simpy_process(fn, env_attr)
 

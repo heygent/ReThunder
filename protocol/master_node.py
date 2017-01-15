@@ -15,7 +15,7 @@ from protocol.packet import Packet, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
 from utils.func import singledispatchmethod
 from utils.graph import shortest_paths_tree, preorder_tree_dfs
-from utils.run_process_decorator import run_process
+from utils.simpy_process import simpy_process
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +178,7 @@ class MasterNode(ReThunderNode):
     def send_message(self, message, message_length, dest_static_addr):
         self._send_store.put((message, message_length, dest_static_addr))
 
-    @run_process
+    @simpy_process
     def run_proc(self):
 
         if self._sptree is None:

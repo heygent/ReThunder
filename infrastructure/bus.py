@@ -7,7 +7,7 @@ import simpy
 from infrastructure.message import TransmittedMessage, CollisionSentinel
 from utils.condition_var import BroadcastConditionVar
 from utils.preemption_first_resource import PreemptionFirstResource
-from utils.run_process_decorator import run_process
+from utils.simpy_process import simpy_process
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class Bus:
     def __str__(self):
         return "<Bus>"
 
-    @run_process
+    @simpy_process
     def send_process(self, message):
 
         env = self.env

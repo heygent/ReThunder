@@ -7,7 +7,7 @@ from protocol.packet import (
 )
 from protocol.rethunder_node import ReThunderNode
 from utils.func import singledispatchmethod
-from utils.run_process_decorator import run_process
+from utils.simpy_process import simpy_process
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class SlaveNode(ReThunderNode):
     def __repr__(self):
         return f'<SlaveNode static_address={self.static_address}>'
 
-    @run_process
+    @simpy_process
     def run_proc(self):
 
         logger.info(f"{self} started.")

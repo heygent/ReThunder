@@ -6,7 +6,7 @@ import simpy
 
 from utils.condition_var import BroadcastConditionVar
 from utils.preemption_first_resource import PreemptionFirstResource
-from utils.run_process_decorator import run_process
+from utils.simpy_process import simpy_process
 from .message import (
     TransmittedMessage, CollisionSentinel, make_transmission_delay
 )
@@ -31,7 +31,7 @@ class NetworkNode:
 
         netgraph.add_node(self)
 
-    @run_process
+    @simpy_process
     def _transmit_process(self, message_val: Any, message_len: int):
 
         transmission_delay = make_transmission_delay(
@@ -42,12 +42,12 @@ class NetworkNode:
 
         yield from self._occupy(message, in_transmission=True)
 
-    @run_process
+    @simpy_process
     def send_process(self, message: TransmittedMessage):
 
         yield from self._occupy(message, in_transmission=False)
 
-    @run_process
+    @simpy_process
     def _receive_process(self, timeout=None):
 
         env = self.env

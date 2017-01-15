@@ -5,7 +5,7 @@ from typing import Optional
 from infrastructure.message import CollisionSentinel
 from infrastructure.node import NetworkNode
 from protocol.packet import Packet, PacketWithSource, AckPacket
-from utils.run_process_decorator import run_process
+from utils.simpy_process import simpy_process
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class ReThunderNode(NetworkNode):
         if isinstance(packet, PacketWithSource):
             self.routing_table[packet.source_logic] = packet.source_static
 
-    @run_process
+    @simpy_process
     def _receive_packet_proc(self, timeout=None):
 
         if isinstance(timeout, int):

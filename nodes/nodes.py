@@ -2,7 +2,7 @@ import collections
 from typing import Any, List, Tuple, Iterable
 
 from infrastructure.node import NetworkNode
-from utils.run_process_decorator import run_process
+from utils.simpy_process import simpy_process
 
 
 class ReceiverNode(NetworkNode):
@@ -14,7 +14,7 @@ class ReceiverNode(NetworkNode):
         self.received: List[Tuple[int, Any]] = []
         self.run_until = lambda: False
 
-    @run_process
+    @simpy_process
     def run_proc(self):
 
         while not self.run_until():
@@ -33,7 +33,7 @@ class SenderNode(NetworkNode):
     def send_next(self, message, message_len):
         self.__send_queue.append((message, message_len))
 
-    @run_process
+    @simpy_process
     def run_proc(self):
 
         send_queue = self.__send_queue
