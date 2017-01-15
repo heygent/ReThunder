@@ -19,7 +19,7 @@ class ReceiverNode(NetworkNode):
 
         while not self.run_until():
 
-            message = yield self._receive_proc()
+            message = yield self._receive_process()
             self.received.append((self.env.now, message))
 
 
@@ -40,4 +40,4 @@ class SenderNode(NetworkNode):
 
         while len(send_queue) > 0:
             msg_to_send = send_queue.popleft()
-            yield self._send_to_network_proc(*msg_to_send)
+            yield self._transmit_process(*msg_to_send)

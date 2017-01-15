@@ -47,7 +47,7 @@ class ReThunderNode(NetworkNode):
 
         while True:
 
-            received_packet = yield self._receive_proc(timeout)
+            received_packet = yield self._receive_process(timeout)
 
             if received_packet is CollisionSentinel:
                 continue
@@ -82,7 +82,7 @@ class ReThunderNode(NetworkNode):
 
                 transmissions += 1
                 transmit = False
-                yield self._send_to_network_proc(
+                yield self._transmit_process(
                     to_send, to_send.number_of_frames()
                 )
 
@@ -108,4 +108,4 @@ class ReThunderNode(NetworkNode):
 
         ack = AckPacket(of=packet)
 
-        yield self._send_to_network_proc(ack, ack.number_of_frames())
+        yield self._transmit_process(ack, ack.number_of_frames())

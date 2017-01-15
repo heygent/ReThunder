@@ -32,7 +32,7 @@ class NetworkNode:
         netgraph.add_node(self)
 
     @run_process
-    def _send_to_network_proc(self, message_val: Any, message_len: int):
+    def _transmit_process(self, message_val: Any, message_len: int):
 
         transmission_delay = make_transmission_delay(
             self._transmission_speed, message_len
@@ -43,12 +43,12 @@ class NetworkNode:
         yield from self._occupy(message, in_transmission=True)
 
     @run_process
-    def send_to_node_proc(self, message: TransmittedMessage):
+    def send_process(self, message: TransmittedMessage):
 
         yield from self._occupy(message, in_transmission=False)
 
     @run_process
-    def _receive_proc(self, timeout=None):
+    def _receive_process(self, timeout=None):
 
         env = self.env
 
@@ -113,7 +113,7 @@ class NetworkNode:
 
             if in_transmission:
                 for bus in self._netgraph.neighbors(self):
-                    bus.send_to_bus_proc(message)
+                    bus.send_process(message)
 
             try:
                 yield env.timeout(to_wait)

@@ -39,7 +39,7 @@ class SlaveNode(ReThunderNode):
             response = self._handle_received(received)  # type: Packet
 
             if response is not None:
-                self._send_to_network_proc(
+                self._transmit_process(
                     response, response.number_of_frames()
                 )
 

@@ -224,7 +224,7 @@ class MasterNode(ReThunderNode):
 
         logger.info(f"Master sends request with token {packet.token}")
 
-        yield self._send_to_network_proc(
+        yield self._transmit_process(
             packet, packet.number_of_frames()
         )
 

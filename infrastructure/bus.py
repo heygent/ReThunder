@@ -29,7 +29,7 @@ class Bus:
         return "<Bus>"
 
     @run_process
-    def send_to_bus_proc(self, message):
+    def send_process(self, message):
 
         env = self.env
 
@@ -59,4 +59,4 @@ class Bus:
 
         for node in self._netgraph.neighbors(self):
             if node is not message.sender:
-                node.send_to_node_proc(message)
+                node.send_process(message)
