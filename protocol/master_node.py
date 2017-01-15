@@ -7,6 +7,7 @@ import networkx as nx
 import simpy
 from networkx.algorithms import bipartite
 
+from infrastructure import Bus
 from infrastructure.message import make_transmission_delay
 from protocol.node_data_manager import NodeDataManager, NodeDataT
 from protocol.packet import AddressType
@@ -50,10 +51,15 @@ class MasterNode(ReThunderNode):
     def init_from_netgraph(self, netgraph: nx.Graph, initial_noise_value=0.5,
                            **kwargs):
 
-        addr_graph = bipartite.projected_graph(
-            netgraph, [node for node in netgraph.nodes_iter()
-                       if isinstance(node, ReThunderNode)]
-        )
+        bus_graph = any(isinstance(node, Bus) for node in netgraph.nodes_iter())
+
+        if bus_graph:
+            addr_graph: nx.Graph = bipartite.projected_graph(
+                netgraph, [node for node in netgraph.nodes_iter()
+                           if isinstance(node, ReThunderNode)]
+            )
+        else:
+            addr_graph: nx.Graph = netgraph.copy()
 
         # noinspection PyTypeChecker
         nx.relabel_nodes(addr_graph, lambda x: x.static_address, False)
