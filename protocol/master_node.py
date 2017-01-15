@@ -41,6 +41,7 @@ class MasterNode(ReThunderNode):
         self._sptree: nx.DiGraph = None
         self._shortest_paths: Dict[NodeDataT, List[NodeDataT]] = None
         self._send_store = simpy.Store(self.env)
+        self.sent_messagges = []
         self._answer_pending = None
         self._node_manager = NodeDataManager()
         self._token_it = itertools.cycle(range(1 << Packet.TOKEN_BIT_SIZE))
@@ -228,6 +229,7 @@ class MasterNode(ReThunderNode):
 
         packet = self._make_request_packet(msg, msg_len, path_to_dest)
 
+        self.sent_messagges.append(msg)
         logger.info(f"Master sends request with token {packet.token}")
 
         yield self._transmit_process(
