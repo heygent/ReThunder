@@ -37,11 +37,11 @@ class MasterNode(ReThunderNode):
         super().__init__(network, 0, 0)
 
         self.node_graph: nx.Graph = nx.Graph()
+        self.sent_messagges = []
         self.on_message_received = on_message_received
         self._sptree: nx.DiGraph = None
         self._shortest_paths: Dict[NodeDataT, List[NodeDataT]] = None
         self._send_store = simpy.Store(self.env)
-        self.sent_messagges = []
         self._answer_pending = None
         self._node_manager = NodeDataManager()
         self._token_it = itertools.cycle(range(1 << Packet.TOKEN_BIT_SIZE))
