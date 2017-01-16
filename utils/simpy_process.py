@@ -15,8 +15,10 @@ def as_generator(fn):
 def simpy_process(process_fn, env_attr='env'):
 
     @wraps(process_fn)
-    def wrapper(self, *args):
-        return getattr(self, env_attr).process(process_fn(self, *args))
+    def wrapper(self, *args, **kwargs):
+        return getattr(self, env_attr).process(
+            process_fn(self, *args, **kwargs)
+        )
 
     return wrapper
 
