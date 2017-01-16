@@ -35,14 +35,15 @@ class ConditionVar:
 
 class BroadcastConditionVar:
 
-    def __init__(self, env):
+    def __init__(self, env, callbacks=None):
         self.env = env
-        self.__signal_event = env.event()
+        self.callbacks = callbacks or []
+        self._signal_ev = self.env.event()
 
     def wait(self):
-        return self.__signal_event
+        return self._signal_ev
 
     def broadcast(self, value=None):
-        signal_event, self.__signal_event = (self.__signal_event,
-                                             self.env.event())
-        signal_event.succeed(value)
+        signal_ev, self._signal_ev = self._signal_ev, self.env.event()
+        signal_ev.callbacks.extend(self.callbacks)
+        signal_ev.succeed(value)
