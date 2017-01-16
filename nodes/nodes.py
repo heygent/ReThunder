@@ -19,7 +19,7 @@ class ReceiverNode(NetworkNode):
 
         while not self.run_until():
 
-            message = yield self._receive_process()
+            message = yield self._receive_ev()
             self.received.append((self.env.now, message))
 
 

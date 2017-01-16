@@ -35,7 +35,7 @@ class SlaveNode(ReThunderNode):
 
         while not self.run_until():
 
-            received = yield self._receive_packet_proc()  # type: Packet
+            received = yield self._receive_packet_ev()  # type: Packet
             response = self._handle_received(received)  # type: Packet
 
             if response is not None:

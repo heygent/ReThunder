@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 
 class NetworkNode:
 
-    timeout_sentinel = object()
-
     def __init__(self, network):
 
         self.env = env = network.env  # type: simpy.Environment
@@ -47,31 +45,8 @@ class NetworkNode:
 
         yield from self._occupy(message, in_transmission=False)
 
-    @simpy_process
-    def _receive_process(self, timeout=None):
-
-        env = self.env
-
-        if timeout is None:
-            to = env.event()
-        elif isinstance(timeout, simpy.Event):
-            to = timeout
-        elif isinstance(timeout, int):
-            to = env.timeout(timeout)
-        else:
-            raise TypeError(
-                'timeout can be None, an integer or an event.'
-            )
-
-        received = self._receive_current_transmission_cond.wait()
-
-        yield received or to
-
-        if received.processed:
-            transmitted_msg: TransmittedMessage = received.value
-            return transmitted_msg.value
-        if to.processed:
-            return self.timeout_sentinel
+    def _receive_ev(self):
+        return self._receive_current_transmission_cond.wait()
 
     def _occupy(self, message: TransmittedMessage, in_transmission):
         env = self.env
@@ -124,4 +99,4 @@ class NetworkNode:
             self._message_in_transmission = None
 
             if not in_transmission:
-                self._receive_current_transmission_cond.broadcast(message)
+                self._receive_current_transmission_cond.broadcast(message.value)

@@ -2,15 +2,17 @@ import logging
 from collections import defaultdict
 from typing import Optional
 
+import simpy
+
 from infrastructure.message import CollisionSentinel
 from infrastructure.node import NetworkNode
 from protocol.packet import Packet, PacketWithSource, AckPacket
-from utils.simpy_process import simpy_process
+from utils import BroadcastConditionVar
 
 logger = logging.getLogger(__name__)
 
 RETRANSMISSIONS = 3
-ACK_TIMEOUT = 15
+ACK_TIMEOUT = 200
 
 
 class ReThunderNode(NetworkNode):
@@ -23,6 +25,11 @@ class ReThunderNode(NetworkNode):
         self.logic_address = logic_address
         self.noise_table = defaultdict(lambda: 0)
         self.routing_table = {}
+        self._receive_packet_cond = BroadcastConditionVar(self.env)
+
+        self._receive_current_transmission_cond.callbacks.append(
+            self._check_packet_callback
+        )
 
     def __repr__(self):
         return f'<ReThunderNode static_address={self.static_address}>'
@@ -39,73 +46,59 @@ class ReThunderNode(NetworkNode):
         if isinstance(packet, PacketWithSource):
             self.routing_table[packet.source_logic] = packet.source_static
 
-    @simpy_process
-    def _receive_packet_proc(self, timeout=None):
+    def _check_packet_callback(self, ev: simpy.Event):
 
-        if isinstance(timeout, int):
-            timeout = self.env.timeout(timeout)
+        received = ev.value
 
-        while True:
+        if received is CollisionSentinel:
+            pass
+        elif not isinstance(received, Packet):
+            logger.error(f"{self} received something different from a packet")
+        elif not received.is_readable():
+            pass
+        else:
+            self._update_noise_table(received)
+            self._update_routing_table(received)
+            self._receive_packet_cond.broadcast(received)
 
-            received_packet = yield self._receive_process(timeout)
+    def _receive_packet_ev(self):
+        return self._receive_packet_cond.wait()
 
-            if received_packet is CollisionSentinel:
-                continue
+    def _acknowledged_transmit(self, message, message_len):
+        env = self.env
 
-            if received_packet is self.timeout_sentinel:
-                return self.timeout_sentinel
+        for transmission in range(1, RETRANSMISSIONS + 1):
 
-            self._update_noise_table(received_packet)
-            self._update_routing_table(received_packet)
+            self._transmit_process(message, message_len)
+            to = env.timeout(ACK_TIMEOUT)
 
-            if not isinstance(received_packet, Packet):
-                logger.error(
-                    "{} received something different from a "
-                    "packet".format(self)
-                )
-                continue
+            while True:
 
-            if not received_packet.is_readable():
-                continue
+                recv_ev = self._receive_packet_ev()
+                cond_value = yield recv_ev | to
 
-            return received_packet
+                if to in cond_value:
 
-    def _send_and_acknowledge(self, to_send: Packet):
+                    logger.info(f"No ack received for transmission "
+                                f"{transmission} of token {message.token}")
+                    return False
 
-        token = to_send.token
-        transmissions = 0
-        transmit = True
+                elif recv_ev in cond_value:
 
-        while transmissions < RETRANSMISSIONS:
+                    received = recv_ev.value
 
-            if transmit:
+                    if (isinstance(received, AckPacket) and
+                            received.next_hop == self.static_address):
+                        return True
+                    else:
+                        logger.info(f"{self} received something else while "
+                                    f"waiting for ack of {message.token}")
 
-                transmissions += 1
-                transmit = False
-                yield self._transmit_process(
-                    to_send, to_send.number_of_frames()
-                )
+    def _transmit_ack(self, message):
 
-            received = yield self._receive_packet_proc(ACK_TIMEOUT)
-
-            if received is self.timeout_sentinel:
-                transmit = True
-
-            elif isinstance(received, AckPacket):
-                if (received.next_hop == self.static_address and
-                        received.token == token):
-                    return True
-            else:
-                logger.warning("{} was waiting for ack, received something "
-                               "else. Ignoring".format(self))
-
-        return False
-
-    def _send_ack(self, packet):
-
-        if getattr(packet, 'source_static', None) is None:
+        if getattr(message, 'source_static', None) is None:
             return
 
-        ack = AckPacket(of=packet)
+        ack = AckPacket(of=message)
+        self._transmit_process(ack, ack.number_of_frames())
 
-        yield self._transmit_process(ack, ack.number_of_frames())

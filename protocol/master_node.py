@@ -185,35 +185,26 @@ class MasterNode(ReThunderNode):
             raise ValueError(f"{self} must be initialized before it's started.")
 
         env = self.env
-        send_ev = recv_ev = None
+        send_ev = None
 
         logger.info(f"{self} started.")
 
         while True:
 
             send_ev = send_ev or self._send_store.get()
-            recv_ev = recv_ev or self._receive_packet_proc()
+            recv_ev = self._receive_packet_ev()
 
-            events = (send_ev, recv_ev)
+            cond_value = yield send_ev | recv_ev
 
-            yield env.any_of(events)
-            # if the events happen at the same time unit, let them all be
-            # processed before proceeding
-            yield env.timeout(0)
-
-            assert any(e.processed for e in events), "Spurious wake"
-
-            if recv_ev.processed:
+            if recv_ev in cond_value:
                 self._handle_received(recv_ev.value)
-                recv_ev = None
 
-            if send_ev.processed:
+            elif send_ev in cond_value:
                 self._answer_pending = yield from self._handle_send_request(
                     send_ev.value
                 )
                 yield from self._wait_for_answer()
                 send_ev = None
-                recv_ev = None
 
     def _handle_send_request(self, msg_data):
 
@@ -241,7 +232,7 @@ class MasterNode(ReThunderNode):
             make_transmission_delay(self._transmission_speed,
                                     packet.number_of_frames())
             + 50
-        )
+        ) * 6
 
         return AnswerPendingRecord(
             packet.token, path_to_dest, packet.new_logic_addresses,
@@ -250,19 +241,20 @@ class MasterNode(ReThunderNode):
 
     def _wait_for_answer(self):
         pending: AnswerPendingRecord = self._answer_pending
-        to = self.env.timeout(pending.expiry_delay)
+        to_sentinel = object()
+        to = self.env.timeout(pending.expiry_delay, value=to_sentinel)
         recv_ev = None
 
         while True:
-            recv_ev = recv_ev or self._receive_packet_proc(to)
-            received = yield recv_ev
+            recv_ev = recv_ev or self._receive_packet_ev()
+            cond_value = yield recv_ev | to
 
-            if received is self.timeout_sentinel:
+            if to in cond_value:
                 logger.info(f"Timeout for answer with token {pending.token}")
                 self._unset_ambiguous_addresses(pending.new_addrs_table)
                 break
-            else:
-                self._handle_received(received)
+            elif recv_ev in cond_value:
+                self._handle_received(recv_ev.value)
 
                 if self._waiting_for_answer():
                     recv_ev = None
