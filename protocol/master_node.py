@@ -10,7 +10,7 @@ from networkx.algorithms import bipartite
 from infrastructure import Bus
 from infrastructure.message import make_transmission_delay
 from protocol.node_data_manager import NodeDataManager, NodeDataT
-from protocol.packet import AddressType
+from protocol.packet import AddressType, AckPacket
 from protocol.packet import Packet, RequestPacket, ResponsePacket
 from protocol.rethunder_node import ReThunderNode
 from utils.func import singledispatchmethod
@@ -38,6 +38,7 @@ class MasterNode(ReThunderNode):
 
         self.node_graph: nx.Graph = nx.Graph()
         self.sent_messagges = []
+        self.acks_enabled = True
         self.on_message_received = on_message_received
         self._sptree: nx.DiGraph = None
         self._shortest_paths: Dict[NodeDataT, List[NodeDataT]] = None
@@ -203,7 +204,9 @@ class MasterNode(ReThunderNode):
                 self._answer_pending = yield from self._handle_send_request(
                     send_ev.value
                 )
-                yield from self._wait_for_answer()
+                if self._answer_pending is not None:
+                    yield from self._wait_for_answer()
+
                 send_ev = None
 
     def _handle_send_request(self, msg_data):
@@ -223,16 +226,18 @@ class MasterNode(ReThunderNode):
         self.sent_messagges.append(msg)
         logger.info(f"Master sends request with token {packet.token}")
 
-        yield self._transmit_process(
-            packet, packet.number_of_frames()
-        )
+        ack = yield from self._acknowledged_transmit(packet,
+                                                     packet.number_of_frames())
+
+        if not ack:
+            return None
 
         estimated_rtt = (
             len(path_to_dest) *
             make_transmission_delay(self._transmission_speed,
                                     packet.number_of_frames())
             + 50
-        ) * 6
+        ) * 20
 
         return AnswerPendingRecord(
             packet.token, path_to_dest, packet.new_logic_addresses,
@@ -255,6 +260,11 @@ class MasterNode(ReThunderNode):
                 break
             elif recv_ev in cond_value:
                 self._handle_received(recv_ev.value)
+                try:
+                    ack = AckPacket(recv_ev.value)
+                    self._transmit_process(ack, ack.number_of_frames())
+                except AttributeError:
+                    pass
 
                 if self._waiting_for_answer():
                     recv_ev = None

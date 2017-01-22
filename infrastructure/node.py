@@ -54,49 +54,58 @@ class NetworkNode:
         last_transmission_start = self._last_transmission_start
         self._last_transmission_start = env.now
 
-        with self._network_res.request(preempt=not in_transmission) as req:
-            yield req
+        req = self._network_res.request(preempt=not in_transmission)
 
-            if self._message_in_transmission is None:
-                self._message_in_transmission = message
-                to_wait = message.transmission_delay
-            else:
-                logger.warning(f"{self}: A collision has happened between "
-                               f"{message} and {self._message_in_transmission}")
+        while True:
+            try:
+                yield req
+                break
+            except simpy.Interrupt:
+                continue
 
-                if in_transmission:
-                    logger.error(
-                        f"{self}: Collision has happened as a consequence of a "
-                        f"transmission by the node. This should not happen."
-                    )
-
-                last_occupation_time = env.now - last_transmission_start
-
-                remaining_occupation_time = (
-                    self._message_in_transmission.transmission_delay -
-                    last_occupation_time
-                )
-
-                to_wait = max(message.transmission_delay,
-                              remaining_occupation_time)
-
-                self._message_in_transmission = TransmittedMessage(
-                    CollisionSentinel,
-                    last_occupation_time + to_wait,
-                    None
-                )
+        if self._message_in_transmission is None:
+            self._message_in_transmission = message
+            to_wait = message.transmission_delay
+        else:
+            logger.warning(f"{self}: A collision has happened between "
+                           f"{message} and {self._message_in_transmission}")
 
             if in_transmission:
-                for bus in self._netgraph.neighbors(self):
-                    bus.send_process(message)
+                logger.error(
+                    f"{self}: Collision has happened as a consequence of a "
+                    f"transmission by the node. This should not happen."
+                )
 
-            try:
-                yield env.timeout(to_wait)
-            except simpy.Interrupt:
-                return
+            last_occupation_time = env.now - last_transmission_start
 
-            message = self._message_in_transmission
-            self._message_in_transmission = None
+            remaining_occupation_time = (
+                self._message_in_transmission.transmission_delay -
+                last_occupation_time
+            )
 
-            if not in_transmission:
-                self._receive_current_transmission_cond.broadcast(message.value)
+            to_wait = max(message.transmission_delay,
+                          remaining_occupation_time)
+
+            self._message_in_transmission = TransmittedMessage(
+                CollisionSentinel,
+                last_occupation_time + to_wait,
+                None
+            )
+
+        if in_transmission:
+            for bus in self._netgraph.neighbors(self):
+                bus.send_process(message)
+
+        try:
+            yield env.timeout(to_wait)
+        except simpy.Interrupt:
+            return
+
+        message = self._message_in_transmission
+        self._message_in_transmission = None
+
+        # todo questo è un po' un hack
+        if not in_transmission and message is not None:
+            self._receive_current_transmission_cond.broadcast(message.value)
+
+        yield self._network_res.release(req)

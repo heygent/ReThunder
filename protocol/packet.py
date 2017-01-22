@@ -27,9 +27,9 @@ class Packet(metaclass=abc.ABCMeta):
 
     __STATIC_FRAMES = 1
 
-    version = FixedSizeInt(2)
+    version = FixedSizeInt('version', 2)
     TOKEN_BIT_SIZE = 3
-    token = FixedSizeInt(TOKEN_BIT_SIZE)
+    token = FixedSizeInt('token', TOKEN_BIT_SIZE)
 
     def __init__(self):
 
@@ -80,7 +80,8 @@ class Packet(metaclass=abc.ABCMeta):
 
 class PacketWithPhysicalAddress(Packet):
 
-    physical_address = FixedSizeInt(FRAME_SIZE * PHYSICAL_ADDRESS_FRAMES)
+    physical_address = FixedSizeInt('physical_address',
+                                    FRAME_SIZE * PHYSICAL_ADDRESS_FRAMES)
 
     @abc.abstractmethod
     def _frame_increment(self):
@@ -89,8 +90,8 @@ class PacketWithPhysicalAddress(Packet):
 
 class PacketWithSource(Packet):
 
-    source_static = FixedSizeInt(FRAME_SIZE)
-    source_logic = FixedSizeInt(FRAME_SIZE)
+    source_static = FixedSizeInt('source_static', FRAME_SIZE)
+    source_logic = FixedSizeInt('source_logic', FRAME_SIZE)
 
     @abc.abstractmethod
     def _frame_increment(self):
@@ -99,7 +100,7 @@ class PacketWithSource(Packet):
 
 class PacketWithNextHop(Packet):
 
-    next_hop = FixedSizeInt(FRAME_SIZE)
+    next_hop = FixedSizeInt('next_hop', FRAME_SIZE)
 
     @abc.abstractmethod
     def _frame_increment(self):
@@ -123,8 +124,8 @@ class HelloResponsePacket(PacketWithPhysicalAddress, PacketWithSource):
     def __init__(self):
         super().__init__()
 
-    new_static_address = FixedSizeInt(FRAME_SIZE)
-    new_logic_address = FixedSizeInt(FRAME_SIZE)
+    new_static_address = FixedSizeInt('new_static_address', FRAME_SIZE)
+    new_logic_address = FixedSizeInt('new_logic_address', FRAME_SIZE)
 
     def __repr__(self):
         return f'<HelloResponsePacket addr={self.physical_address}>'
@@ -157,7 +158,7 @@ class CommunicationPacket(PacketWithSource, PacketWithNextHop):
 
     __STATIC_FRAMES = 1
 
-    payload_length  = FixedSizeInt(FRAME_SIZE)
+    payload_length  = FixedSizeInt('payload_length', FRAME_SIZE)
 
     def __init__(self):
         super().__init__()
@@ -185,7 +186,7 @@ class RequestPacket(CommunicationPacket):
 
     __STATIC_FRAMES = 3
 
-    destination     = FixedSizeInt(FRAME_SIZE)
+    destination     = FixedSizeInt('destination', FRAME_SIZE)
 
     def __init__(self):
 

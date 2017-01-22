@@ -1,28 +1,18 @@
-from typing import Optional
-
 
 class FixedSizeInt:
 
-    def __init__(self, max_bits, init_value: Optional[int]=0, optional=False):
-
-        self.max_bits: int = max_bits
-        self.__optional: bool = optional
-        self.__validate(init_value)
-        self.__value: Optional[int] = init_value
+    def __init__(self, name, max_bits):
+        self.name = name
+        self.max_bits = max_bits
 
     def __get__(self, instance, owner):
-        return self.__value
+        return instance.__dict__[self.name]
 
     def __set__(self, instance, value):
-        self.__validate(value)
-        self.__value = value
+        self._validate(value)
+        instance.__dict__[self.name] = value
 
-    def __validate(self, value):
-
-        if value is None:
-            if not self.__optional:
-                raise ValueError("Value can't be None")
-        elif value.bit_length() > self.max_bits:
+    def _validate(self, value):
+        if value.bit_length() > self.max_bits:
             raise ValueError("Integer too big for this field")
-
 

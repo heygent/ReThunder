@@ -3,8 +3,8 @@ from copy import copy
 from typing import Optional
 
 from protocol.packet import (
-    Packet, RequestPacket, ResponsePacket, AddressType
-)
+    Packet, RequestPacket, ResponsePacket, AddressType,
+    AckPacket)
 from protocol.rethunder_node import ReThunderNode
 from utils.func import singledispatchmethod
 from utils.simpy_process import simpy_process
@@ -36,10 +36,18 @@ class SlaveNode(ReThunderNode):
         while not self.run_until():
 
             received = yield self._receive_packet_ev()  # type: Packet
+
+            try:
+                ack = AckPacket(received)
+                yield self._transmit_process(ack, ack.number_of_frames())
+                yield self.env.timeout(500)
+            except AttributeError:
+                pass
+
             response = self._handle_received(received)  # type: Packet
 
             if response is not None:
-                self._transmit_process(
+                yield from self._acknowledged_transmit(
                     response, response.number_of_frames()
                 )
 
