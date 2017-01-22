@@ -12,7 +12,7 @@ from utils import BroadcastConditionVar
 logger = logging.getLogger(__name__)
 
 RETRANSMISSIONS = 3
-ACK_TIMEOUT = 1000
+ACK_TIMEOUT = 200
 
 
 class ReThunderNode(NetworkNode):
@@ -26,11 +26,10 @@ class ReThunderNode(NetworkNode):
         self.noise_table = defaultdict(lambda: 0)
         self.routing_table = {}
         self._receive_packet_cond = BroadcastConditionVar(self.env)
-        self._ack_received_cond = BroadcastConditionVar(self.env)
 
-        self._receive_current_transmission_cond.callbacks.extend((
-            self._check_packet_callback, self._wait_ack_callback
-        ))
+        self._receive_current_transmission_cond.callbacks.append(
+            self._check_packet_callback
+        )
 
     def __repr__(self):
         return f'<ReThunderNode static_address={self.static_address}>'
@@ -60,7 +59,6 @@ class ReThunderNode(NetworkNode):
         else:
             self._update_noise_table(received)
             self._update_routing_table(received)
-            logger.debug(f"{self} received {received}.")
             self._receive_packet_cond.broadcast(received)
 
     def _receive_packet_ev(self):
@@ -81,9 +79,9 @@ class ReThunderNode(NetworkNode):
 
                 if to in cond_value:
 
-                    logger.info(f"{self}: no ack received for transmission "
+                    logger.info(f"No ack received for transmission "
                                 f"{transmission} of token {message.token}")
-                    break
+                    return False
 
                 elif recv_ev in cond_value:
 
@@ -96,10 +94,11 @@ class ReThunderNode(NetworkNode):
                         logger.info(f"{self} received something else while "
                                     f"waiting for ack of {message.token}")
 
-    def _wait_ack_ev(self):
-        return self._ack_received_cond.wait()
+    def _transmit_ack(self, message):
 
-    def _wait_ack_callback(self, ev):
-        if (isinstance(ev.value, AckPacket) and
-                ev.value.next_hop == self.static_address):
-            self._ack_received_cond.broadcast(ev.value)
+        if getattr(message, 'source_static', None) is None:
+            return
+
+        ack = AckPacket(of=message)
+        self._transmit_process(ack, ack.number_of_frames())
+
