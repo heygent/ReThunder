@@ -195,7 +195,7 @@ class RequestPacket(CommunicationPacket):
         self.new_logic_addresses: Dict[int, int] = None
 
     def __repr__(self):
-        return f'<RequestPacket source={self.source_static} ' \
+        return f'<RequestPacket tok={self.token} source={self.source_static} ' \
                f'next_hop={self.next_hop}>'
 
     def _frame_increment(self):
@@ -219,7 +219,7 @@ class ResponsePacket(CommunicationPacket):
         self.new_node_list: List[int] = []
 
     def __repr__(self):
-        return f'<ResponsePacket source={self.source_static} ' \
+        return f'<ResponsePacket tok={self.token} source={self.source_static} ' \
                f'next_hop={self.next_hop}>'
 
     def _frame_increment(self):
