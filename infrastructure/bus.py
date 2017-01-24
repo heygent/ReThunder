@@ -13,8 +13,25 @@ logger = logging.getLogger(__name__)
 
 
 class Bus:
+    """
+    Gli oggetti bus vengono utilizzati all'interno dell'infrastruttura per
+    tenere in conto dei ritardi di propagazione tra i nodi. I bus vengono
+    connessi ai nodi all'interno del grafo di rete, e i nodi connessi a
+    questo condividono un canale di comunicazione avente il ritardo di
+    propagazione stabilito.
+    Alla ricezione del messaggio, il bus attende il tempo stabilito alla
+    creazione prima di trasmettere il messaggio agli altri nodi connessi a
+    esso, al termine del quale questi ricevono il messaggio.
+    """
 
     def __init__(self, network, propagation_delay):
+        """
+        Inizializza un Bus.
+
+        :param network: La rete in cui si vuole inserire il bus.
+        :param propagation_delay: Il ritardo di propagazione, espresso in
+        tempo di simulazione.
+        """
 
         self.env = env = network.env
         self._netgraph = netgraph = weakref.proxy(network.netgraph)
@@ -30,6 +47,29 @@ class Bus:
 
     @simpy_process
     def send_process(self, message):
+        """
+        Il processo che gestisce l'invio di un messaggio all'interno di un bus.
+
+        L'invio funziona creando un processo che resta in esecuzione per la
+        durata del ritardo di propagazione, al termine del quale il messaggio
+        viene propagato ai nodi a cui il bus risulta vicino nel grafo di rete
+        (se il grafo è diretto, per vicino si intende "nodo verso cui il bus
+        ha un arco in uscita".)
+
+        Se il bus riceve un messaggio durante l'esecuzione di un altro
+        processo, il bus simula una collisione nel seguente modo:
+
+        * Il processo precedente di invio viene terminato, senza pulire lo
+        stato attuale di trasmissione del bus che contiene il messaggio
+        precedente;
+
+        * Un nuovo processo viene eseguito, il quale controlla lo stato del
+        bus. Se un processo precedente è stato eseguito senza pulizia finale,
+        vengono intraprese le operazioni per creare una collisione.
+
+        :param message:
+        :return:
+        """
 
         env = self.env
 
