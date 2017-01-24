@@ -6,7 +6,6 @@ import simpy
 
 from infrastructure.message import TransmittedMessage, CollisionSentinel
 from utils.condition_var import BroadcastConditionVar
-from utils.preemption_first_resource import PreemptionFirstResource
 from utils.simpy_process import simpy_process
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ class Bus:
         self.env = env = network.env
         self._netgraph = netgraph = weakref.proxy(network.netgraph)
         self._propagation_delay = propagation_delay
-        self._network_res = PreemptionFirstResource(env)
+        self._current_send_proc = None
         self._message_in_transmission: Optional[TransmittedMessage] = None
         self._receive_current_transmission_cond = BroadcastConditionVar(env)
 
@@ -73,6 +72,11 @@ class Bus:
 
         env = self.env
 
+        if self._current_send_proc is not None:
+            self._current_send_proc.interrupt()
+
+        self._current_send_proc = env.active_process
+
         if self._message_in_transmission is None:
             self._message_in_transmission = message
         else:
@@ -86,16 +90,15 @@ class Bus:
                 None
             )
 
-        with self._network_res.request(preempt=True) as req:
-            try:
-                yield req
-                yield env.timeout(self._propagation_delay)
+        try:
+            yield env.timeout(self._propagation_delay)
+        except simpy.Interrupt:
+            return
 
-                message = self._message_in_transmission
-                self._message_in_transmission = None
+        message = self._message_in_transmission
+        self._message_in_transmission = None
 
-            except simpy.Interrupt:
-                return
+        self._current_send_proc = None
 
         for node in self._netgraph.neighbors(self):
             if node is not message.sender:
