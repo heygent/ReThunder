@@ -128,7 +128,7 @@ class TestAddedCycle(unittest.TestCase):
         )
 
         network.netgraph.add_path(nodes)
-        network.make_buses()
+        # network.make_buses()
         nodes[0].init_from_netgraph(network.netgraph)
         network.run_nodes_processes()
 
@@ -143,9 +143,7 @@ class TestAddedCycle(unittest.TestCase):
         nodes[0].send_message(msg, len(msg), 2)
         network.env.run()
 
-        network.netgraph.add_star((
-            Bus(network, 10), nodes[0], nodes[2]
-        ))
+        network.netgraph.add_path((nodes[0], nodes[2]))
 
         nodes[0].send_message(msg, len(msg), 2)
         network.env.run()
@@ -244,7 +242,6 @@ class TestTreeConfiguration(unittest.TestCase):
         msg = self.msg
         ans = self.ans
 
-        # network.netgraph.add_star((Bus(network, 10), nodes[0], nodes[12]))
         network.netgraph.add_edge(nodes[0], nodes[12])
 
         nodes[0].init_from_netgraph(network.netgraph)
@@ -260,3 +257,30 @@ class TestTreeConfiguration(unittest.TestCase):
                           [msg] * 2 * (len(nodes) - 1))
         self.assertEquals(self.received,
                           [ans.format(i) for i in range(last_addr, 0, -1)] * 2)
+
+    def test_with_dynamic_cycles(self):
+
+        network = self.network
+        nodes = self.nodes
+        last_addr = len(nodes) - 1
+        msg = self.msg
+        ans = self.ans
+
+        network.netgraph.add_edge(nodes[0], nodes[8])
+        network.netgraph.add_edge(nodes[0], nodes[12])
+        network.netgraph.add_edge(nodes[0], nodes[16])
+
+        nodes[0].init_from_netgraph(network.netgraph)
+        network.run_nodes_processes()
+
+        for _ in range(2):
+            for i in range(last_addr, 0, -1):
+                nodes[0].send_message(msg, len(msg), i)
+
+        network.env.run()
+
+        self.assertEquals(nodes[0].sent_messagges,
+                          [msg] * 2 * (len(nodes) - 1))
+        self.assertEquals(self.received,
+                          [ans.format(i) for i in range(last_addr, 0, -1)] * 2)
+
