@@ -36,7 +36,7 @@ class MasterNode(ReThunderNode):
 
         super().__init__(network, 0, 0)
 
-        self.node_graph: nx.Graph = nx.Graph()
+        self.node_graph = nx.Graph()
         self.sent_messagges = []
         self.on_message_received = on_message_received
         self._sptree: nx.DiGraph = None
@@ -184,7 +184,6 @@ class MasterNode(ReThunderNode):
         if self._sptree is None:
             raise ValueError(f"{self} must be initialized before it's started.")
 
-        env = self.env
         send_ev = None
 
         logger.info(f"{self} started.")
@@ -232,7 +231,7 @@ class MasterNode(ReThunderNode):
             make_transmission_delay(self._transmission_speed,
                                     packet.number_of_frames())
             + 50
-        ) * 6
+        ) * 12
 
         return AnswerPendingRecord(
             packet.token, path_to_dest, packet.new_logic_addresses,
@@ -275,6 +274,9 @@ class MasterNode(ReThunderNode):
 
     @_handle_received.register(ResponsePacket)
     def _(self, packet):
+
+        if packet.next_hop != self.static_address:
+            return
 
         pending = self._answer_pending
 
