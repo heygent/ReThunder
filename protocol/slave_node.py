@@ -1,6 +1,5 @@
 import logging
 from copy import copy
-from typing import Optional
 
 from protocol.packet import (
     Packet, RequestPacket, ResponsePacket, AddressType
@@ -14,19 +13,25 @@ logger = logging.getLogger(__name__)
 
 class SlaveNode(ReThunderNode):
 
-    def __init__(self, network, static_address: int,
-                 logic_address: Optional[int]=None, on_message_received=None):
+    # noinspection PyMethodMayBeStatic
+    def on_message_received(self, payload, payload_length):
+        return
 
-        super().__init__(network, static_address, logic_address)
+    def __init__(self, network, static_address: int, on_message_received=None):
+
+        super().__init__(network, static_address, None)
 
         self.last_sent_routing_table = {}
         self._previous_node_static_addr = None
 
         self.run_until = lambda: False
-        self.on_message_received = on_message_received or (lambda x, y, z: None)
+
+        if on_message_received is not None:
+            self.on_message_received = on_message_received
 
     def __repr__(self):
-        return f'<SlaveNode static_address={self.static_address}>'
+        return f'<SlaveNode static={self.static_address} logic=' \
+               f'{self.logic_address}>'
 
     @simpy_process
     def run_proc(self):
@@ -39,6 +44,7 @@ class SlaveNode(ReThunderNode):
             response = self._handle_received(received)  # type: Packet
 
             if response is not None:
+                logger.debug(f"{self} is sending {response}")
                 self._transmit_process(
                     response, response.number_of_frames()
                 )
