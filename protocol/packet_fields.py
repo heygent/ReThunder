@@ -1,28 +1,26 @@
-from typing import Optional
+from collections import defaultdict
 
 
 class FixedSizeInt:
+    """
+    Descrittore che controlla la lunghezza in bit dei valori con cui viene
+    settata la proprietà, e che causa ValueError se questi sono più lunghi del
+    valore stabilito alla creazione.
+    """
 
-    def __init__(self, max_bits, init_value: Optional[int]=0, optional=False):
-
-        self.max_bits: int = max_bits
-        self.__optional: bool = optional
-        self.__validate(init_value)
-        self.__value: Optional[int] = init_value
+    def __init__(self, max_bits):
+        self._data = defaultdict(int)
+        self.max_bits = max_bits
 
     def __get__(self, instance, owner):
-        return self.__value
+        return self._data[instance]
 
     def __set__(self, instance, value):
-        self.__validate(value)
-        self.__value = value
 
-    def __validate(self, value):
+        if not isinstance(value, int):
+            raise TypeError("Value must be int")
 
-        if value is None:
-            if not self.__optional:
-                raise ValueError("Value can't be None")
-        elif value.bit_length() > self.max_bits:
+        if value.bit_length() > self.max_bits:
             raise ValueError("Integer too big for this field")
 
-
+        self._data[instance] = value
