@@ -14,6 +14,28 @@ logger = logging.getLogger(__name__)
 
 
 class NetworkNode:
+    """
+    Classe di base dei nodi nella rete del simulatore.
+
+    I nodi nel simulatore devono essere sottoclassi di NetworkNode. Questa
+    classe fornisce l'interfaccia per la trasmissione e la ricezione di
+    messaggi e gestisce le collisioni.
+
+    Le collisioni vengono gestite tenendo un processo di invio attivo quando la
+    rete è occupata, per ricezione o trasmissione. La trasmissione quando la
+    rete è occupata viene rinviata.
+    Nello stato interno del nodo, viene tenuto un riferimento al messaggio
+    correntemente in trasmissione. Quando più di un processo d'invio è
+    presente e in stato d'invio, il primo di questi viene interrotto,
+    lasciando lo stato interno "sporco", ovvero contenente il precendente
+    messaggio in trasmissione.
+    Il nuovo processo d'invio usa il suo messaggio assieme a questo per
+    creare un messaggio di collisione.
+    Il processo, quindi, attende una quantità di tempo pari al ritardo di
+    trasmissione del messaggio, durante la quale possono verificarsi nuove
+    collisioni reiterando quanto descritto.
+
+    """
 
     def __init__(self, network):
 
@@ -30,6 +52,13 @@ class NetworkNode:
 
     @simpy_process
     def _transmit_process(self, message_val: Any, message_len: int):
+        """
+        Invia un messaggio dal nodo alla rete.
+
+        :param message_val: Il contenuto del messaggio.
+        :param message_len: La lunghezza relativa del messaggio.
+        :return: Il processo che esegue l'operazione descritta.
+        """
 
         transmission_delay = make_transmission_delay(
             self._transmission_speed, message_len
@@ -41,20 +70,37 @@ class NetworkNode:
 
     @simpy_process
     def send_process(self, message: TransmittedMessage):
+        """
+        Invia un messaggio al nodo.
+        :param message: Il TransmittedMessage da mandare al nodo.
+        :return: Il processo che esegue l'operazione descritta.
+        """
 
         yield from self._occupy(message, in_transmission=False)
 
     def _receive_ev(self):
+        """
+        Restituisce un evento che scatta alla prossima ricezione del
+        messaggio da parte del nodo.
+        Il valore dell'evento sarà il messaggio ricevuto.
+        :return: Un evento per ricevere messaggi.
+        """
         return self._receive_current_transmission_cond.wait()
 
     def _occupy(self, message: TransmittedMessage, in_transmission):
+        """
+        Generatore che esegue le operazioni di trasmissione e ricezione.
+
+        Viene
+        :param message:
+        :param in_transmission:
+        :return:
+        """
         env = self.env
         this_proc = env.active_process
 
         if in_transmission:
-            while True:
-                if self._current_occupy_proc is None:
-                    break
+            while self._current_occupy_proc is not None:
                 yield self._current_occupy_proc
         else:
             if self._current_occupy_proc is not None:
