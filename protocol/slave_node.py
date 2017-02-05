@@ -7,6 +7,7 @@ from protocol.packet import (
 from protocol.rethunder_node import ReThunderNode
 from utils.func import singledispatchmethod
 from utils.simpy_process import simpy_process
+from types import MethodType
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class SlaveNode(ReThunderNode):
 
     # noinspection PyMethodMayBeStatic
     def on_message_received(self, payload, payload_length):
-        return
+        return None, 0
 
     def __init__(self, network, static_address: int, on_message_received=None):
 
@@ -27,11 +28,11 @@ class SlaveNode(ReThunderNode):
         self.run_until = lambda: False
 
         if on_message_received is not None:
-            self.on_message_received = on_message_received
+            self.on_message_received = MethodType(on_message_received, self)
 
     def __repr__(self):
-        return f'<SlaveNode static={self.static_address} logic=' \
-               f'{self.logic_address}>'
+        return f'<SlaveNode static={self.static_address} ' \
+               f'logic={self.logic_address}>'
 
     @simpy_process
     def run_proc(self):
@@ -72,11 +73,8 @@ class SlaveNode(ReThunderNode):
         logger.info(f"{self} received {packet}")
         self._previous_node_static_addr = packet.source_static
 
-        new_logic_addr = packet.new_logic_addresses.pop(self.static_address,
-                                                        None)
-
-        if new_logic_addr is not None:
-            self.logic_address = new_logic_addr
+        self.logic_address = packet.new_logic_addresses.pop(self.static_address,
+                                                            self.logic_address)
 
         packet.source_static = self.static_address
         packet.source_logic = self.logic_address
@@ -150,7 +148,7 @@ class SlaveNode(ReThunderNode):
         self.last_sent_routing_table = copy(self.routing_table)
 
         response.payload, response.payload_length = self.on_message_received(
-            self, packet.payload, packet.payload_length
+            packet.payload, packet.payload_length
         )
 
         return response

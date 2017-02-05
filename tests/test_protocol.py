@@ -258,6 +258,7 @@ class TestTreeConfiguration(unittest.TestCase):
         self.assertEquals(self.received,
                           [ans.format(i) for i in range(last_addr, 0, -1)] * 2)
 
+#   @unittest.skip
     def test_with_dynamic_cycles(self):
 
         network = self.network

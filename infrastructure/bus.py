@@ -32,12 +32,11 @@ class Bus:
         tempo di simulazione.
         """
 
-        self.env = env = network.env
+        self.env = network.env
         self._netgraph = netgraph = weakref.proxy(network.netgraph)
         self._propagation_delay = propagation_delay
         self._current_send_proc = None
         self._message_in_transmission: Optional[TransmittedMessage] = None
-        self._receive_current_transmission_cond = BroadcastConditionVar(env)
 
         netgraph.add_node(self)
 

@@ -2,6 +2,7 @@ import abc
 import enum
 import inspect
 import math
+import random
 from collections import defaultdict
 from typing import List, Dict, Tuple
 
@@ -37,7 +38,6 @@ class Packet(metaclass=abc.ABCMeta):
         self.code_is_addressing_static = False
 
         self.__frame_errors = defaultdict(int)
-        self.__frame_errors_view = self.__frame_errors.items()
 
     def number_of_frames(self):
         """
@@ -57,15 +57,18 @@ class Packet(metaclass=abc.ABCMeta):
     def _frame_increment(self):
         return self.__STATIC_FRAMES
 
-    def damage_bit(self, frame_index=None):
+    def damage_frame(self, frame_index=None, errors=1):
+
+        if frame_index is None:
+            frame_index = random.randrange(self.number_of_frames())
 
         if not 0 <= frame_index < self.number_of_frames():
             raise IndexError('Frame index out of range')
 
-        self.__frame_errors[frame_index] += 1
+        self.__frame_errors[frame_index] += errors
 
     def damaged_frames(self):
-        return self.__frame_errors_view
+        return self.__frame_errors.items()
 
     def frame_error_average(self):
 
@@ -76,6 +79,9 @@ class Packet(metaclass=abc.ABCMeta):
 
     def is_readable(self):
         return all(errors < 2 for errors in self.__frame_errors.values())
+
+    def remove_errors(self):
+        self.__frame_errors = defaultdict(int)
 
 
 class PacketWithPhysicalAddress(Packet):
@@ -155,21 +161,21 @@ class AckPacket(PacketWithNextHop):
 
 class CommunicationPacket(PacketWithSource, PacketWithNextHop):
 
-    __STATIC_FRAMES = 1
-
     payload_length  = FixedSizeInt(FRAME_SIZE)
 
     def __init__(self):
         super().__init__()
         self.payload = None
+        self.payload_length = 0
 
     @abc.abstractmethod
     def _frame_increment(self):
-        # todo sistema numero frame rispetto campo lunghezza
 
-        frames = self.__STATIC_FRAMES
+        if self.payload is None:
+            frames = 0
+        else:
+            frames = 1
 
-        # noinspection PyTypeChecker
         quot, remainder = divmod(self.payload_length, 4)
         frames += quot * 3 + remainder
 
@@ -201,10 +207,16 @@ class RequestPacket(CommunicationPacket):
     def _frame_increment(self):
 
         frames = self.__STATIC_FRAMES
+
         path_len = len(self.path or ())
+
         if path_len > 0:
             frames += path_len + bitmap_frame_count(path_len) + 1
-        frames += len(self.new_logic_addresses) * 2
+
+        new_addrs_len = len(self.new_logic_addresses or ())
+
+        if new_addrs_len > 0:
+            frames += new_addrs_len * 2
 
         return frames
 
@@ -219,8 +231,8 @@ class ResponsePacket(CommunicationPacket):
         self.new_node_list: List[int] = []
 
     def __repr__(self):
-        return f'<ResponsePacket tok={self.token} source={self.source_static} ' \
-               f'next_hop={self.next_hop}>'
+        return f'<ResponsePacket tok={self.token} ' \
+               f'source={self.source_static}  next_hop={self.next_hop}>'
 
     def _frame_increment(self):
 

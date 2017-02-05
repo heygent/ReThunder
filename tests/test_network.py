@@ -15,21 +15,18 @@ class TestNetwork(unittest.TestCase):
     def test_reception(self):
 
         network = self.network
-        messages = [('Message{}'.format(i), 8) for i in range(10)]
+        messages = [(f'Message{i}', 8) for i in range(10)]
 
         sender = SenderNode(network, messages)
         receiver = ReceiverNode(network)
         bus = Bus(network, 4)
 
-        for node in (sender, receiver):
-            network.netgraph.add_edge(node, bus)
-
-        processes = [node.run_proc() for node in (sender, receiver)]
-
+        network.netgraph.add_star((bus, sender, receiver))
+        network.run_nodes_processes()
         network.env.run()
 
         self.assertEqual(receiver.received,
-                         [(4 + 4 * i, msg)
+                         [(4 * (i + 1), msg)
                           for i, (msg, _) in enumerate(messages, start=1)])
 
     def test_collisions(self):

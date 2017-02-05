@@ -30,9 +30,6 @@ class SenderNode(NetworkNode):
         super().__init__(network)
         self.__send_queue = collections.deque(iterable=send_queue)
 
-    def send_next(self, message, message_len):
-        self.__send_queue.append((message, message_len))
-
     @simpy_process
     def run_proc(self):
 

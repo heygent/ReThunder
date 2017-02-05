@@ -7,7 +7,7 @@ from sortedcontainers import SortedDict
 class NodeDataManager(collections.Mapping):
 
     FLAG_VALUES = frozenset((None,))
-    MAX_ADDRESS = 1 << 11
+    MAX_ADDRESS = 1 << 11 - 1
 
     class NodeData:
 
@@ -48,16 +48,6 @@ class NodeDataManager(collections.Mapping):
                 self._logic_address, other._logic_address
             )
 
-        def __eq__(self, other):
-
-            if not isinstance(other, NodeDataManager.NodeData):
-                return super().__eq__(other)
-
-            return self is other
-
-        def __hash__(self):
-            return self.static_address
-
         def __repr__(self):
             return '<NodeData static={} logic={} current_logic={}>'.format(
                 self.static_address, self.logic_address,
@@ -95,15 +85,19 @@ class NodeDataManager(collections.Mapping):
 
         logic_to_node = self._logic_to_node
 
-        invalid = node.logic_address in self.FLAG_VALUES
-        delete = new_logic_address in self.FLAG_VALUES
+        invalid_previous_addr = node.logic_address in self.FLAG_VALUES
+        only_delete = new_logic_address in self.FLAG_VALUES
+        already_assigned = (
+            logic_to_node.get(new_logic_address, self) is not self
+        )
 
-        if not invalid and delete:
-            del logic_to_node[node.logic_address]
-        elif invalid and not delete:
-            logic_to_node[new_logic_address] = node
-        elif not invalid and not delete:
+        if already_assigned:
             raise ValueError('The logic address is already assigned.')
+
+        if not invalid_previous_addr:
+            del logic_to_node[node.logic_address]
+        if not only_delete:
+            logic_to_node[new_logic_address] = node
 
     def _swap_logic_mappings(self, addr1, addr2):
         logic_to_node = self._logic_to_node

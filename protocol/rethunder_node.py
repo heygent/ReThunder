@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 from typing import Optional
 
 import simpy
@@ -11,9 +10,6 @@ from utils import BroadcastConditionVar
 
 logger = logging.getLogger(__name__)
 
-RETRANSMISSIONS = 3
-ACK_TIMEOUT = 200
-
 
 class ReThunderNode(NetworkNode):
 
@@ -23,7 +19,7 @@ class ReThunderNode(NetworkNode):
         super().__init__(network)
         self.static_address = static_address
         self.logic_address = logic_address
-        self.noise_table = defaultdict(lambda: 0)
+        self.noise_table = {}
         self.routing_table = {}
         self._receive_packet_cond = BroadcastConditionVar(self.env)
 
@@ -63,42 +59,4 @@ class ReThunderNode(NetworkNode):
 
     def _receive_packet_ev(self):
         return self._receive_packet_cond.wait()
-
-    def _acknowledged_transmit(self, message, message_len):
-        env = self.env
-
-        for transmission in range(1, RETRANSMISSIONS + 1):
-
-            self._transmit_process(message, message_len)
-            to = env.timeout(ACK_TIMEOUT)
-
-            while True:
-
-                recv_ev = self._receive_packet_ev()
-                cond_value = yield recv_ev | to
-
-                if to in cond_value:
-
-                    logger.info(f"No ack received for transmission "
-                                f"{transmission} of token {message.token}")
-                    return False
-
-                elif recv_ev in cond_value:
-
-                    received = recv_ev.value
-
-                    if (isinstance(received, AckPacket) and
-                            received.next_hop == self.static_address):
-                        return True
-                    else:
-                        logger.info(f"{self} received something else while "
-                                    f"waiting for ack of {message.token}")
-
-    def _transmit_ack(self, message):
-
-        if getattr(message, 'source_static', None) is None:
-            return
-
-        ack = AckPacket(of=message)
-        self._transmit_process(ack, ack.number_of_frames())
 

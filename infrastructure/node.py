@@ -66,7 +66,7 @@ class NetworkNode:
 
         message = TransmittedMessage(message_val, transmission_delay, self)
 
-        yield from self._occupy(message, in_transmission=True)
+        yield from self.__occupy(message, in_transmission=True)
 
     @simpy_process
     def send_process(self, message: TransmittedMessage):
@@ -76,7 +76,7 @@ class NetworkNode:
         :return: Il processo che esegue l'operazione descritta.
         """
 
-        yield from self._occupy(message, in_transmission=False)
+        yield from self.__occupy(message, in_transmission=False)
 
     def _receive_ev(self):
         """
@@ -87,7 +87,7 @@ class NetworkNode:
         """
         return self._receive_current_transmission_cond.wait()
 
-    def _occupy(self, message: TransmittedMessage, in_transmission):
+    def __occupy(self, message: TransmittedMessage, in_transmission):
         """
         Generatore che esegue le operazioni di trasmissione e ricezione.
 
@@ -118,12 +118,6 @@ class NetworkNode:
             logger.warning(f"{self}: A collision has happened between "
                            f"{message} and {self._message_in_transmission}")
 
-            if in_transmission:
-                logger.error(
-                    f"{self}: Collision has happened as a consequence of a "
-                    f"transmission by the node. This should not happen."
-                )
-
             last_occupation_time = env.now - last_transmission_start
 
             remaining_occupation_time = (
@@ -141,8 +135,8 @@ class NetworkNode:
             )
 
         if in_transmission:
-            for bus in self._netgraph.neighbors(self):
-                bus.send_process(message)
+            for n in self._netgraph.neighbors(self):
+                n.send_process(message)
 
         try:
             yield env.timeout(to_wait)

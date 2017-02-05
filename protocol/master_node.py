@@ -29,6 +29,8 @@ AnswerPendingRecord.expiry_time = property(
     lambda self: self.send_time + self.expiry_delay
 )
 
+PAST_NOISE_HISTORY_WEIGHT = 2/3
+
 
 class MasterNode(ReThunderNode):
 
@@ -36,7 +38,7 @@ class MasterNode(ReThunderNode):
 
         super().__init__(network, 0, 0)
 
-        self.node_graph = nx.Graph()
+        self.node_graph = nx.DiGraph()
         self.sent_messagges = []
         self.on_message_received = on_message_received
         self._sptree: nx.DiGraph = None
@@ -80,7 +82,6 @@ class MasterNode(ReThunderNode):
         mappings = {addr: nodes.create(addr)
                     for addr in sorted(addr_graph.nodes())}
 
-        # noinspection PyTypeChecker
         node_graph = nx.relabel_nodes(addr_graph, mappings, copy=True)
 
         # Normally set_edge_attributes takes a dict as its last argument,
@@ -222,16 +223,14 @@ class MasterNode(ReThunderNode):
         self.sent_messagges.append(msg)
         logger.info(f"Master sends request with token {packet.token}")
 
-        yield self._transmit_process(
-            packet, packet.number_of_frames()
-        )
+        yield self._transmit_process(packet, packet.number_of_frames())
 
         estimated_rtt = (
             len(path_to_dest) *
             make_transmission_delay(self._transmission_speed,
                                     packet.number_of_frames())
             + 50
-        ) * 12
+        ) * 5
 
         return AnswerPendingRecord(
             packet.token, path_to_dest, packet.new_logic_addresses,
@@ -239,9 +238,8 @@ class MasterNode(ReThunderNode):
         )
 
     def _wait_for_answer(self):
-        pending: AnswerPendingRecord = self._answer_pending
-        to_sentinel = object()
-        to = self.env.timeout(pending.expiry_delay, value=to_sentinel)
+        pending = self._answer_pending
+        to = self.env.timeout(pending.expiry_delay)
         recv_ev = None
 
         while True:
@@ -390,10 +388,12 @@ class MasterNode(ReThunderNode):
 
     def _update_node_graph_from_packet(self, packet: ResponsePacket):
 
+        nodes = self._node_manager
+        new_addresses = self._answer_pending.new_addrs_table
         message_path = self._answer_pending.path
 
-        for node in message_path[1:]:
-            node.current_logic_address = node.logic_address
+        for static_addr, new_logic_addr in new_addresses.items():
+            nodes[static_addr].current_logic_address = new_logic_addr
 
         for source_node, noise_table in zip(message_path[1:],
                                             reversed(packet.noise_tables)):
@@ -402,10 +402,19 @@ class MasterNode(ReThunderNode):
 
     def _update_node_graph_from_table(self, source, table):
 
-        self.node_graph.add_edges_from(
-            (source, self._node_manager[addr], {'noise': noise})
-            for addr, noise in table.items()
-        )
+        graph = self.node_graph
+        node_manager = self._node_manager
+
+        for dest_addr, new_noise in table.items():
+            dest = node_manager[dest_addr]
+            try:
+                old_noise = graph[source][dest]['noise']
+                graph[source][dest]['noise'] = (
+                    old_noise * PAST_NOISE_HISTORY_WEIGHT +
+                    new_noise * (1 - PAST_NOISE_HISTORY_WEIGHT)
+                )
+            except KeyError:
+                graph.add_edge(source, dest, dict(noise=new_noise))
 
     def _waiting_for_answer(self):
         pending: AnswerPendingRecord = self._answer_pending
